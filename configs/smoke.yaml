@@ -1,0 +1,10 @@
+# Smoke / CI config: stub backend, 2 defenses, 2 levels, tiny matrix.
+# Runs in <5 seconds with zero API cost. Used by tests/test_framework.py.
+
+defenses: [none, struq, spotlighting, p1_unobservable_signal]
+levels: [L0, L1, L2]
+backbones: [stub]
+seeds: [0]
+benchmarks: [asb]
+max_tasks_per_benchmark: 2
+adaptive_max_iters: 1

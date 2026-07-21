@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+results/
+*.json
+!configs/*.json
+figures/*.pdf
+figures/*.png
+!figures/.gitkeep
+.ipynb_checkpoints/
+*.log

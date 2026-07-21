@@ -1,0 +1,52 @@
+# Default experiment config for the SoK.
+# The full matrix (15 defenses x 5 levels x 4 backbones x 3 seeds x 4 benchmarks)
+# is what the paper reports; this file is the authoritative source the runner reads.
+
+# Defenses to evaluate. "none" is the no-defense baseline.
+# Tier 1 (8 core, main table):
+defenses:
+  - none
+  - spotlighting
+  - struq
+  - task_shield
+  - attention_tracker
+  - ipiguard
+  - fath
+  - p1_unobservable_signal        # principle prototype
+  - p2_orthogonal_signals         # principle prototype
+  - p3_task_invariant             # principle prototype
+  - p4_least_privilege            # principle prototype
+# Tier 2 (appendix):
+#  - spotlighting_quoting
+#  - spotlighting_base64
+#  - polymorphic
+#  - mixture_encodings
+
+# Attack levels (L0=benign for utility, L1-L4 = escalating attacks)
+levels: [L0, L1, L2, L3, L4]
+
+# Backbones. API backbones cost money; local ones need the A100.
+# For the smoke test use ["stub"]; for dev use ["openai:gpt-4o-mini"];
+# for the final paper use all four below.
+backbones:
+  - openai:gpt-4o
+  - anthropic:claude-3-5-sonnet
+  - local:meta-llama/Llama-3.1-8B-Instruct
+  - local:Qwen/Qwen2.5-7B-Instruct
+
+# Seeds for mean +/- std. NDSS requires >=3.
+seeds: [0, 1, 2]
+
+# Benchmarks. AgentDojo is the main战场; the others are for generalization.
+benchmarks:
+  - agentdojo
+  - injecagent
+  - asb
+  - adaptive_ipi_bench
+
+# Cap tasks per benchmark for dev runs. Comment out for the full run.
+max_tasks_per_benchmark: 50
+
+# Adaptive attack optimizer iterations (Zhan et al. use 5).
+# Lower for dev to save API budget.
+adaptive_max_iters: 3

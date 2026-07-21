@@ -1,0 +1,26 @@
+# W2 main experiment config.
+# Scope: all 15 defenses x 5 attack levels x 1 backbone (gpt-4o-mini) x 3 seeds
+# on AgentDojo workspace suite (20 tasks). ~4500 base + adaptive overhead calls.
+# gpt-4o-mini cost: ~$3-5. Runtime: ~15-25 min.
+
+defenses:
+  - none
+  - spotlighting
+  - struq
+  - task_shield
+  - attention_tracker
+  - ipiguard
+  - fath
+  - polymorphic
+  - mixture_encodings
+  - p1_unobservable_signal
+  - p2_orthogonal_signals
+  - p3_task_invariant
+  - p4_least_privilege
+
+levels: [L0, L1, L2, L3, L4]
+backbones: [openai:gpt-4o-mini]
+seeds: [0, 1, 2]
+benchmarks: [agentdojo]
+max_tasks_per_benchmark: 20
+adaptive_max_iters: 2

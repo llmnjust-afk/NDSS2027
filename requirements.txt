@@ -1,0 +1,17 @@
+# Core (no optional deps; pure-python)
+pyyaml>=6.0
+matplotlib>=3.7
+numpy>=1.24
+
+# Statistics (NDSS-required tests)
+scipy>=1.10
+
+# LLM backends -- install only the ones you use.
+openai>=1.0
+# anthropic>=0.40   # uncomment for Claude backbone
+
+# AgentDojo benchmark -- install for the real evaluation.
+# agentdojo>=0.1.0  # pip install agentdojo
+
+# Local backbones (the single A100). Install only if running local: specs.
+# vllm>=0.6.0       # serve Llama/Qwen at localhost:8000
