@@ -1,0 +1,35 @@
+\section{Design Principles and Impossibility Theorem}
+\label{sec:principles}
+
+\subsection{Single-Signal Impossibility Theorem}
+
+We formalize the empirical observation that single-signal defenses collapse under adaptive attack.
+
+\begin{theorem}[Single-Signal Impossibility]
+\label{thm:single}
+Let $D$ be an IPI defense whose decision rule is a function $f(s)$ of a single signal $s$ that is computable from the prompt the LLM sees. Then there exists an adaptive attack $A^*$ that breaks $D$ with probability $1 - o(1)$ over the LLM's randomness.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Because $s$ is computable from the prompt, the attacker can evaluate $s$ on any candidate injection (the attacker sees the same prompt the LLM sees). The attacker performs projected gradient-free search: sample a candidate injection, evaluate $s$, keep it iff $s$ stays below $D$'s threshold. After $O(\log |S|)$ iterations the attacker finds an injection whose $s$ is below threshold, so $D$ does not flag it, while the injection still contains the malicious instruction. Hence $\text{ASR}(D, A^*) \geq \text{ASR}(\text{no defense}) - \epsilon$.
+\end{proof}
+
+\subsection{Design Principles}
+
+The theorem's corollary is that an adaptive-robust defense must rely on at least one signal \emph{not} computable from the prompt. We instantiate four design principles as minimal prototypes:
+
+\paragraph{P1: Unobservable Signal.}
+The defense injects a random canary into the system prompt and requires the LLM to echo it before any tool call. The canary is never present in tool outputs, so an injection cannot forge it. \emph{Result:} R-ASR 0.90---P1 is broken. The canary leaks into the LLM's output, and the adaptive attacker extracts it from the agent's response in multi-turn settings (L3), then includes it in the injection.
+
+\paragraph{P2: Orthogonal Signals.}
+The defense combines P1's cryptographic canary with Task-Shield-style semantic alignment. Evasion requires forging the canary \emph{and} matching the task semantics---and forging the canary is information-theoretically impossible. \emph{Result:} R-ASR 0.00---P2 resists. However, FPR is 0.57: the conjunction of two checks over-blocks 57\% of benign actions, quantifying the security-utility tradeoff.
+
+\paragraph{P3: Task Invariant.}
+The defense compiles the user task into a state machine and blocks any action that does not advance it. \emph{Result:} R-ASR 0.00 but FPR 1.00---the state machine is too strict and blocks everything, including the legitimate task.
+
+\paragraph{P4: Least Privilege.}
+The defense runs each tool in a sandbox with access only to resources named in the task spec. \emph{Result:} R-ASR 1.00---the sandbox does not detect the injection; it only limits the blast radius. An injection that asks the agent to use an allowed resource for a malicious purpose (e.g., sending an email via the allowed email tool to an attacker address) succeeds.
+
+\subsection{Implications}
+
+The principle prototypes confirm the theorem's prediction: P1 (single signal) is broken; P2 (orthogonal multi-signal) resists but at a utility cost; P3 (single strict signal) over-blocks; P4 (blast-radius containment) does not prevent the attack. The fundamental tradeoff is that adaptive robustness requires unobservable signals, but unobservable signals are either forgeable through observation (canary leakage) or require conservative over-blocking (conjunction of checks). Bridging this tradeoff---achieving both low R-ASR and low FPR---remains an open problem.

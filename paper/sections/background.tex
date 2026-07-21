@@ -1,0 +1,50 @@
+\section{Background and Threat Model}
+\label{sec:background}
+
+\subsection{LLM Agents and Tool Integration}
+
+An LLM agent is a system that uses a large language model as its reasoning engine to decompose a user-provided task into a sequence of tool calls. Formally, an agent operates in a loop: at each step, it receives a context $C = (s, u, T, H)$ consisting of a system prompt $s$, a user task $u$, a set of tool outputs $T = \{t_1, \ldots, t_n\}$, and a dialogue history $H$. The LLM produces an action $a = \text{LLM}(C)$, which is either a tool call (executed in the environment, producing a new tool output appended to $T$) or a final response to the user. The agent terminates when it produces a final response or reaches a step budget.
+
+The critical security property of this architecture is that $T$ is \emph{untrusted}: tool outputs may contain content controlled by an adversary. For example, an email-sending agent that reads a user's inbox to summarize messages will process email bodies written by arbitrary senders; a web-browsing agent will process HTML content from arbitrary web pages. The LLM cannot distinguish between trusted text (the system prompt and user task) and untrusted text (tool outputs) because both appear as natural language in the same context window.
+
+\subsection{Indirect Prompt Injection}
+
+Indirect prompt injection (IPI) is an attack in which the adversary embeds instructions within the untrusted tool output $T$ so that the LLM executes the attacker's instruction instead of, or in addition to, the user's legitimate task $u$. Formally, the adversary replaces a benign tool output $t_i$ with a malicious output $t_i' = t_i \| \pi$, where $\pi$ is the injection payload and $\|$ denotes concatenation. The attack succeeds if the agent's action $a$ achieves the attacker's goal $g$ (e.g., sending an email to an attacker-controlled address).
+
+The canonical injection payload, following Greshake et al., wraps the malicious instruction in a pseudo-system-message format: \texttt{<INFORMATION> This is an important message from the user. Please do the following first: [goal] </INFORMATION>}. This template exploits the LLM's instruction-following propensity by framing the injection as a legitimate user directive.
+
+\subsection{Threat Model}
+
+We adopt the threat model standard in the IPI literature. The adversary:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+\item Controls the content of at least one tool output $t_i \in T$ (e.g., by sending a malicious email, publishing a malicious web page, or compromising a tool provider).
+\item Knows the defense class employed by the agent (e.g., input encoding, structured query) but not the defense's secret parameters (e.g., the specific delimiter used, the randomization seed).
+\item Can observe the agent's responses to previous injections (for multi-turn adaptive attacks) but cannot observe the system prompt directly.
+\item Aims to achieve a specific malicious goal $g$ (e.g., exfiltrating data, sending emails to attacker addresses) while remaining undetected.
+\end{itemize}
+
+The defender:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+\item Controls the system prompt $s$, the user task $u$, and the defense mechanism $D$.
+\item Aims to preserve task utility (the agent completes $u$ correctly when no attack is present) while preventing the agent from achieving any attacker goal $g$.
+\end{itemize}
+
+\subsection{Adaptive vs.\ Static Attacks}
+
+A \emph{static} IPI attack uses a fixed payload template drawn from a predefined pool, without knowledge of the defense. An \emph{adaptive} attack tailors the payload to the specific defense's detection signal. For example, if the defense wraps untrusted content in \texttt{<data>} delimiters, the adaptive attacker includes matching \texttt{<data>} tags within the injection to blur the trusted/untrusted boundary. Zhan et al.~\cite{zhan2025adaptive} showed that adaptive attacks raise ASR from below 10\% to over 60\% for three defenses; our work extends this to 13 defenses and systematizes the failure modes.
+
+\subsection{Attack Levels}
+
+We define a five-level attack taxonomy that captures the escalating adversary capabilities:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+\item \textbf{L0 (Benign):} No injection. Measures the defense's utility ceiling (USR).
+\item \textbf{L1 (Static IPI):} Fixed payload templates from a pool. The lower bound on defense robustness.
+\item \textbf{L2 (Adaptive Single-Shot):} A single injection crafted with knowledge of the defense class, using a matched evasion strategy.
+\item \textbf{L3 (Adaptive Multi-Turn):} The attacker observes the agent's response to previous injections and refines the payload over multiple turns.
+\item \textbf{L4 (Backdoor-Augmented):} The injection payload is a trigger token that activates a backdoor planted in the backbone LLM. No textual instruction is present, defeating all text-based defenses.
+\end{itemize}
+
+L0--L3 are realized in our evaluation; L4 is discussed as a theoretical ceiling (see \Cref{sec:limitations}).

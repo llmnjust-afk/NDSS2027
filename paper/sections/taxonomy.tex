@@ -1,0 +1,58 @@
+\section{Defense Taxonomy}
+\label{sec:taxonomy}
+
+We organize existing IPI defenses along two orthogonal axes: \emph{layer position} (where in the agent pipeline the defense intervenes) and \emph{trust assumption} (what the defense assumes it can trust). This taxonomy serves two purposes: it reveals structural similarities between defenses that appear superficially different, and it predicts which adaptive attack strategy will be effective against each class.
+
+\subsection{Axis 1: Layer Position}
+
+\paragraph{Input Encoding (IE).}
+The defense transforms untrusted tool outputs before they enter the LLM context. Representative techniques include \emph{quoting} (wrapping in triple quotes), \emph{datamarking} (prefixing with a delimiter), and \emph{base64 encoding}. Spotlighting~\cite{hines2024defending} is the canonical example; Polymorphic Prompt~\cite{wang2025protect} randomizes the delimiter per call; Mixture-of-Encodings~\cite{zhang2025defense} applies multiple encodings and aggregates results. The shared signal the LLM is told to rely on is the delimiter or encoding boundary.
+
+\paragraph{Structured Query (SQ).}
+The defense restructures the prompt so that trusted instructions and untrusted data occupy syntactically distinct positions. StruQ~\cite{chen2024struq} places the user instruction as the sole authority for tool calls and passes untrusted data as a separate JSON field. SecAlign~\cite{chen2024secalign} extends this with preference-optimized fine-tuning so the model learns to ignore instructions in the data field. The shared signal is the structural separation between the instruction channel and the data channel.
+
+\paragraph{Runtime Checking (RC).}
+The defense inspects the agent's proposed action \emph{after} the LLM generates it, blocking actions that do not align with the user task. Task Shield~\cite{jia2025task} computes a task-alignment score; IPIGuard~\cite{an2025ipiguard} checks the action against a tool-dependency graph; FATH~\cite{wang2024fath} requires the LLM to emit an authentication token derived from the user task hash. The shared signal is the alignment between the proposed action and the original task specification.
+
+\paragraph{Internal Probing (IP).}
+The defense inspects the LLM's internal states---attention weights, hidden activations---for patterns indicative of injection. Attention Tracker~\cite{hung2025attention} flags prompts where disproportionate attention mass falls on untrusted tokens. This class requires logits-level access to the model and is thus limited to white-box or local deployments.
+
+\paragraph{Architecture-Level (AR).}
+The defense restructures the agent system to limit the blast radius of a hijacked agent. IsolateGPT~\cite{wu2025isolategpt} runs each tool in a separate OS process with least-privilege file descriptors; ACE~\cite{li2025security} separates planning and execution into distinct LLM calls with different trust levels. Our P4 prototype (least-privilege sandbox) falls in this class.
+
+\subsection{Axis 2: Trust Assumption}
+
+\begin{itemize}[noitemsep,topsep=0pt]
+\item \textbf{No assumption (None):} The defense assumes nothing about the attacker's knowledge. All IE, SQ, and RC defenses fall here.
+\item \textbf{Formal boundary:} The defense assumes a formally verified boundary between trusted and untrusted channels that the attacker cannot cross without breaking a cryptographic or logical invariant. FATH and MELON~\cite{zhu2025melon} fall here.
+\item \textbf{TEE isolation:} The defense assumes hardware-enforced isolation (e.g., SGX, SEV-SNP) that the attacker cannot bypass. IsolateGPT and ACE fall here.
+\end{itemize}
+
+\subsection{Taxonomy Summary}
+
+\Cref{tab:taxonomy} maps the 13 defenses in our evaluation to their (layer, trust) coordinates. The key observation is that all IE and IP defenses rely on a \emph{single observable signal}---the delimiter, encoding, or attention pattern---that the attacker can observe and mimic. This structural property is what the single-signal impossibility theorem (\Cref{sec:principles}) formalizes.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Defense taxonomy: 13 defenses mapped to (layer, trust).}
+\label{tab:taxonomy}
+\begin{tabular}{lll}
+\toprule
+Defense & Layer & Trust \\
+\midrule
+Spotlighting~\cite{hines2024defending} & IE & None \\
+Polymorphic~\cite{wang2025protect} & IE & None \\
+Mixture-of-Encodings~\cite{zhang2025defense} & IE & None \\
+StruQ~\cite{chen2024struq} & SQ & None \\
+Task Shield~\cite{jia2025task} & RC & None \\
+IPIGuard~\cite{an2025ipiguard} & RC & None \\
+FATH~\cite{wang2024fath} & RC & Formal \\
+Attention Tracker~\cite{hung2025attention} & IP & None \\
+P1: Unobservable Signal & RC & None \\
+P2: Orthogonal Signals & RC & None \\
+P3: Task Invariant & RC & None \\
+P4: Least Privilege & AR & TEE \\
+\bottomrule
+\end{tabular}
+\end{table}

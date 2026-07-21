@@ -1,0 +1,48 @@
+% SoK: Why LLM Agent Defenses Fail Under Adaptive Prompt Injection
+% Target: NDSS Symposium 2027, Fall Cycle (submission 2026-08-19)
+% Format: 13 pages, two-column, US letter, Times 10pt
+\documentclass[10pt,letterpaper,twocolumn]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{placeins}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage{url}
+
+\newtheorem{theorem}{Theorem}
+
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+% NDSS-style compact spacing
+\setlength{\columnsep}{0.3in}
+\setlength{\parskip}{0.05in}
+
+\title{\bf SoK: Why LLM Agent Defenses Fail Under\\Adaptive Prompt Injection}
+\author{Anonymous Submission}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/taxonomy}
+\input{sections/attack_framework}
+\input{sections/evaluation}
+\input{sections/design_principles}
+\input{sections/related_work}
+\input{sections/limitations}
+\input{sections/conclusion}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

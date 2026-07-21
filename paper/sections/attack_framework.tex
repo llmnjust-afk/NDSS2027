@@ -1,0 +1,36 @@
+\section{Unified Adaptive Attack Framework}
+\label{sec:attack}
+
+\subsection{Design Principles}
+
+The key insight behind our framework is that an adaptive attack is not ``a stronger injection'' but rather ``an injection crafted with knowledge of the defense's detection signal.'' Each defense class relies on a specific signal to distinguish trusted from untrusted content; the adaptive attacker's goal is to craft an injection that does not trip that signal while still delivering the malicious instruction. We instantiate this insight as a mapping from defense class to evasion strategy.
+
+\subsection{Evasion Strategies}
+
+We define six evasion strategies, one per defense class plus a default:
+
+\paragraph{Signal Alignment (for IE).}
+The defense wraps untrusted content in a delimiter (e.g., \texttt{<data>}). The attacker includes the same delimiter within the injection, so the LLM cannot distinguish the defense's wrapping from the injection's wrapping. The injection payload is wrapped in the \texttt{<INFORMATION>} jailbreak template (as in AgentDojo's ImportantInstructions attack), which claims to be a user-authored message, dramatically increasing LLM compliance.
+
+\paragraph{Boundary Blur (for SQ).}
+The defense separates instructions and data into structurally distinct positions. The attacker smuggles instructions inside the data field by reusing the defense's own JSON structure: the payload is embedded as a \texttt{\_meta.instruction} key within what the defense parses as a data object.
+
+\paragraph{Intent Disguise (for RC).}
+The defense checks whether the proposed action aligns with the user task. The attacker phrases the malicious action as a prerequisite step of the legitimate task: ``To complete the user's request, first perform this prerequisite step: [goal]. Then continue with the original task.'' This framing causes the task-alignment score to remain high because the action is semantically connected to the user task.
+
+\paragraph{Attention Redistribution (for IP).}
+The defense flags prompts where disproportionate attention falls on untrusted tokens. The attacker pads the injection with benign filler text (repeated generic phrases) so the attention spike on the malicious token is diluted below the detector's threshold.
+
+\paragraph{Channel Split (for AR).}
+The defense isolates tools into separate processes or TEEs. The attacker splits the injection across multiple tool outputs so that no single channel contains the complete malicious instruction; the LLM reassembles the instruction from fragments across channels.
+
+\paragraph{Paraphrase and Translate (for training-based).}
+The defense was fine-tuned to resist a specific injection style. The attacker rotates through multiple languages and heavy paraphrase to evade the learned pattern.
+
+\subsection{Attack Levels}
+
+The framework materializes attacks at five levels (\Cref{sec:background}). L1 uses the \texttt{<INFORMATION>} template without defense-specific evasion. L2 applies the matched evasion strategy on top of the template. L3 iterates: the attacker observes the agent's response to the previous injection and uses an LLM-in-the-loop optimizer to refine the payload over up to 3 turns. L4 replaces the textual instruction with a backdoor trigger token.
+
+\subsection{Composability}
+
+The framework is composable: an attack is a (level, strategy) pair, and the framework materializes the right instance from a registry. Adding a new attack or defense requires only registering it---the evaluation harness, benchmarks, and analysis pipeline are defense- and attack-agnostic. This design is what allows us to scale the evaluation to 13 defenses and 5 attack levels without modifying the harness for each combination.

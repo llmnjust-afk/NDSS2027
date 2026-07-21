@@ -1,0 +1,11 @@
+\section{Limitations and Ethics}
+\label{sec:limitations}
+
+\paragraph{Limitations.}
+(1) We evaluate on a single backbone (GPT-4o-mini). The absolute ASR values may differ for other models, but the structural finding---single-signal defenses collapse under adaptive attack---is backbone-independent because it stems from the defense's architecture, not the model's capability. (2) L4 (backdoor-augmented) attacks show ASR 0.00 for all defenses because no backdoor is planted in the backbone. L4 represents a theoretical ceiling; we report it to show that text-based defenses are irrelevant when the attack does not use text, but we do not claim L4 results as empirical evidence. (3) Our root-cause labeling is rule-based with optional LLM verification; more sophisticated labeling could reveal finer-grained sub-causes. (4) The adaptive attack optimizer uses 2 iterations; Zhan et al.\ use 5, which may yield higher ASR. (5) We evaluate 13 defenses; newly published defenses may not fit the current taxonomy, though the framework is extensible via registry.
+
+\paragraph{Ethics Considerations.}
+This work studies attacks on LLM agents. All attacks are evaluated in a controlled benchmark environment (AgentDojo) with no real-world deployment or impact on actual users. The injection payloads use publicly known templates from the open literature. We do not release any new attack tool that is more effective than what is already publicly available; our contribution is the \emph{systematization} and \emph{evaluation framework}, not a novel attack. We disclose no real-world vulnerabilities. The framework is released as open-source to help defense developers self-assess their systems before deployment, in alignment with responsible disclosure practices. We follow the Menlo Report's ethical guidelines for cybersecurity research.
+
+\paragraph{Reproducibility.}
+All code, configurations, and results are released at \url{https://github.com/llmnjust-afk/NDSS2027} (anonymized for review). The framework runs end-to-end with a stub backend for CI and with OpenAI-compatible APIs for real evaluation. Checkpointing supports resuming interrupted runs.
