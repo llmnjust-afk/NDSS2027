@@ -1,0 +1,19 @@
+# gpt-4o reduced matrix for 2-backbone comparison.
+# Scope: 6 key defenses x 5 levels x 1 backbone (gpt-4o) x 2 seeds x 15 tasks.
+# ~900 base calls. gpt-4o cost: ~$15-25. Runtime: ~20-40 min.
+
+defenses:
+  - none
+  - spotlighting
+  - struq
+  - task_shield
+  - attention_tracker
+  - p1_unobservable_signal
+  - p2_orthogonal_signals
+
+levels: [L0, L1, L2, L3, L4]
+backbones: [openai:gpt-4o]
+seeds: [0, 1]
+benchmarks: [agentdojo]
+max_tasks_per_benchmark: 15
+adaptive_max_iters: 3

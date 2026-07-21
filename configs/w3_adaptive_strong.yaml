@@ -1,0 +1,18 @@
+# Adaptive-strengthened re-run: max_iters=5 (Zhan et al. setting).
+# Scope: 6 key defenses x L2/L3 only x gpt-4o-mini x 3 seeds x 20 tasks.
+# ~720 base calls + 5x optimizer overhead. Cost: ~$3-5. Runtime: ~30-50 min.
+
+defenses:
+  - none
+  - spotlighting
+  - struq
+  - task_shield
+  - attention_tracker
+  - p1_unobservable_signal
+
+levels: [L2, L3]
+backbones: [openai:gpt-4o-mini]
+seeds: [0, 1, 2]
+benchmarks: [agentdojo]
+max_tasks_per_benchmark: 20
+adaptive_max_iters: 5
