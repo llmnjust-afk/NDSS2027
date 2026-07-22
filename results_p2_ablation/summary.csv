@@ -1,0 +1,4 @@
+config,n,ASR,ASR_lo,ASR_hi,utility,util_lo,util_hi,errors
+alignment_only,90,0.0889,0.0457,0.1657,0.0444,0.0174,0.1088,0
+canary_only,90,0.0333,0.0114,0.0935,0.0,0.0,0.0409,0
+combined,90,0.0,0.0,0.0409,0.0,0.0,0.0409,0

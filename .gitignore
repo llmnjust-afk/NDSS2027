@@ -11,3 +11,4 @@ figures/*.png
 !figures/.gitkeep
 .ipynb_checkpoints/
 *.log
+results_native_full11/
