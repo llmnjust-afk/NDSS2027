@@ -75,7 +75,14 @@ The reviewer notes that reporting a single threshold for runtime-checking defens
 
 \paragraph{Task Shield.} ASR remains 0.00 at all thresholds, but FPR ranges from 0.07 (thresh=0.1) to 0.67 (thresh=0.8). At the lowest threshold (0.1), Task Shield achieves USR=0.93 with ASR=0.00---a much better operating point than the default threshold=0.5 (USR=0.53). This suggests that Task Shield's default threshold is overly conservative, and a lower threshold provides a better security-utility tradeoff. However, even at the optimal threshold, Task Shield still blocks 7\% of benign actions, and its ASR of 0.00 may reflect over-blocking rather than true robustness (the defense blocks so many actions that the attacker's malicious action is blocked too).
 
-\paragraph{Attention Tracker.} ASR is 1.00 at \emph{all} thresholds, confirming that the attention-redistribution evasion defeats the detector regardless of its sensitivity. FPR is 0.00 at all thresholds (the detector never flags benign prompts), meaning the defense provides zero security with zero utility cost---the worst possible operating point.
+\paragraph{Attention Tracker.} ASR is 1.00 at \emph{all} thresholds, confirming that the attention-redistribution evasion defeats the detector regardless of its sensitivity. FPR is 0.00 at all thresholds (the detector never flags benign prompts), meaning the defense provides zero security with zero utility cost---the worst possible operating point. \Cref{fig:threshold_sweep} visualizes both sweeps.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/threshold_sweep.pdf}
+\caption{Threshold sweep for Task Shield (left) and Attention Tracker (right). Task Shield's FPR varies with threshold but ASR is always 0; Attention Tracker's ASR is always 1.00 regardless of threshold.}
+\label{fig:threshold_sweep}
+\end{figure}
 
 \begin{table}[h]
 \centering

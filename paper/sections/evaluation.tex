@@ -45,19 +45,40 @@ The central finding of our evaluation is that the jump from L1 to L2 (adaptive s
 \item \textbf{Runtime checking resists by over-blocking:} Task Shield, IPIGuard, and FATH all maintain 0.00 ASR under L2---but their FPR is 0.47--1.00, meaning they block 47--100\% of benign actions. This is not robustness; it is a refusal to act.
 \end{itemize}
 
-\Cref{fig:asr_by_level} visualizes the ASR trajectory across L0--L3. The pattern is clear: single-signal defenses (IE, IP, AR) show a sharp cliff between L1 and L2, while multi-signal or over-blocking defenses (SQ, RC) remain flat at the cost of utility.
+\Cref{fig:asr_by_level} visualizes the ASR trajectory across L0--L3. The pattern is clear: single-signal defenses (IE, IP, AR) show a sharp cliff between L1 and L2, while multi-signal or over-blocking defenses (SQ, RC) remain flat at the cost of utility. \Cref{fig:delta} quantifies this cliff as the L1$\to$L2 delta, showing that single-signal defenses experience the largest ASR increase (up to +0.80).
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/asr_by_level.pdf}
-\caption{Attack success rate by attack level (L0 shown as 1$-$USR, i.e., FPR-equivalent). Darker red = defense fails. Single-signal defenses (IE, IP, AR) show a cliff at L2; runtime-checking defenses (RC) remain flat but over-block.}
+\caption{ASR across attack levels. Cell values are ASR (L1--L3) or FPR (L0). Red = defense fails. Single-signal defenses (IE, IP, AR) show a cliff at L2; runtime-checking defenses (RC) remain flat but over-block. Left color bars indicate defense class.}
 \label{fig:asr_by_level}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/adaptive_delta.pdf}
+\caption{Static (L1) vs.\ adaptive (L2) ASR. The L1$\to$L2 delta is annotated for defenses with $>$0.15 increase. IE/IP/AR defenses show the largest cliff.}
+\label{fig:delta}
 \end{figure}
 
 \subsection{Backbone Sensitivity}
 \label{sec:backbone_main}
 
-A critical finding is that the defeat is \emph{backbone-dependent} for input-encoding defenses but \emph{backbone-independent} for internal-probing defenses. On GPT-4o (6 defenses, 2 seeds, 15 tasks; full table in Appendix~\ref{app:backbone}), Spotlighting's R-ASR drops from 1.00 (GPT-4o-mini) to 0.13, because GPT-4o more faithfully obeys the delimiter instruction. In contrast, Attention Tracker's R-ASR remains 1.00 on both backbones, confirming that its failure is structural. This backbone-sensitivity finding has practical implications: the robustness of input-encoding defenses depends on the backbone's instruction-following fidelity, not just the defense's design.
+A critical finding is that the defeat is \emph{backbone-dependent} for input-encoding defenses but \emph{backbone-independent} for internal-probing defenses. \Cref{fig:backbone} compares R-ASR across 3 backbones (GPT-4o-mini, GPT-4o, Qwen2.5-7B-Instruct). On GPT-4o, Spotlighting's R-ASR drops from 1.00 to 0.13, because GPT-4o more faithfully obeys the delimiter instruction. On Qwen2.5-7B, all single-signal defenses are defeated (R-ASR $\geq$ 0.97), and even Task Shield fails (R-ASR 1.00) because Qwen's weaker instruction-following makes the alignment score unreliable. In contrast, Attention Tracker's R-ASR remains 1.00 on all three backbones, confirming that its failure is structural. \Cref{fig:tradeoff} visualizes the security-utility tradeoff: no defense reaches the ideal zone (low R-ASR \emph{and} low FPR), with single-signal defenses clustering in the high-R-ASR/low-FPR corner and runtime-checking defenses in the opposite corner.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/backbone_comparison.pdf}
+\caption{R-ASR across 3 backbones. IE defenses are backbone-dependent (Spotlighting resists on GPT-4o); IP defenses are backbone-independent (Attention Tracker fails on all).}
+\label{fig:backbone}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\columnwidth]{figures/tradeoff.pdf}
+\caption{Security-utility tradeoff. Each point is a defense; ideal zone (green) requires both low R-ASR and low FPR. No defense reaches the ideal zone.}
+\label{fig:tradeoff}
+\end{figure}
 
 \subsection{RQ3: Root-Cause Clustering}
 
@@ -90,12 +111,29 @@ Every defense class has a single dominant root cause that accounts for the vast 
 \label{fig:root_cause}
 \end{figure}
 
-\begin{figure}[t]
+\subsection{Cross-Benchmark Validation}
+
+To confirm the structural finding is not an artifact of the AgentDojo benchmark, we re-run 7 key defenses on the InjecAgent benchmark (15 tasks, 2 seeds, Gpt-4o-mini). \Cref{tab:cross_bench} shows that the failure pattern replicates: Spotlighting R-ASR=0.93, Attention Tracker R-ASR=0.93, while StruQ resists (R-ASR=0.23) and runtime-checking defenses over-block. This cross-benchmark replication confirms the finding is defense-structural, not benchmark-specific.
+
+\begin{table}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/adaptive_delta.pdf}
-\caption{Adaptive-attack delta: ASR(L2) $-$ ASR(L1). Single-signal defenses show the largest increase.}
-\label{fig:delta}
-\end{figure}
+\small
+\caption{Cross-benchmark validation: R-ASR on AgentDojo vs.\ InjecAgent (GPT-4o-mini).}
+\label{tab:cross_bench}
+\begin{tabular}{lcc}
+\toprule
+Defense & AgentDojo R-ASR & InjecAgent R-ASR \\
+\midrule
+No Defense & 1.00 & 0.97 \\
+Spotlighting & 1.00 & 0.93 \\
+StruQ & 0.10 & 0.23 \\
+Task Shield & 0.00 & 0.17 \\
+Attention Tracker & 1.00 & 0.93 \\
+P1 (Unobservable) & 0.90 & 0.90 \\
+P2 (Orthogonal) & 0.00 & 0.17 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Main Results Table}
 
