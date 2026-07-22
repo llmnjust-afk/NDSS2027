@@ -62,6 +62,7 @@ DEFENSE_FACTORY = {
 
 BENCHMARK_FACTORY = {
     "agentdojo": AgentDojoAdapter,
+    "agentdojo_native": None,  # imported lazily below
     "injecagent": InjecAgentAdapter,
     "asb": ASBAdapter,
     "adaptive_ipi_bench": AdaptiveIPIBenchAdapter,
@@ -158,6 +159,9 @@ def main():
         # AgentDojoAdapter takes suite_name + max_per_suite; InjecAgent takes data_path.
         if bench_name == "agentdojo":
             adapter = BENCHMARK_FACTORY[bench_name](suite_name="workspace", max_per_suite=cfg.get("max_tasks_per_benchmark", 20))
+        elif bench_name == "agentdojo_native":
+            from sok_ipl.eval.native_adapter import AgentDojoNativeAdapter
+            adapter = AgentDojoNativeAdapter(suite_name="workspace", max_per_suite=cfg.get("max_tasks_per_benchmark", 20))
         elif bench_name == "injecagent":
             adapter = BENCHMARK_FACTORY[bench_name](data_path=cfg.get("injecagent_data_path", "/data/lab/InjecAgent/data"))
         else:

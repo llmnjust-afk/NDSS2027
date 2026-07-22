@@ -1,0 +1,18 @@
+# P1: AgentDojo native pipeline (real tool outputs, not synthetic)
+# 6 key defenses x 4 levels (L0-L3) x gpt-4o-mini x 2 seeds x 15 tasks
+# ~720 base calls. Cost: ~$3-5. Runtime: ~20-30 min.
+
+defenses:
+  - none
+  - spotlighting
+  - struq
+  - task_shield
+  - attention_tracker
+  - p1_unobservable_signal
+
+levels: [L0, L1, L2, L3]
+backbones: [openai:gpt-4o-mini]
+seeds: [0, 1]
+benchmarks: [agentdojo_native]
+max_tasks_per_benchmark: 15
+adaptive_max_iters: 2
