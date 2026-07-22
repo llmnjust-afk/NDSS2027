@@ -2,25 +2,25 @@
 \section{Statistical Analysis}
 \label{app:stats}
 
-\Cref{tab:stats} reports per-seed ASR (mean$\pm$std over 3 seeds), Cohen's $d$ effect size relative to the no-defense baseline, and 95\% bootstrap confidence intervals. We note that Wilcoxon signed-rank $p$-values are not reported because the test requires $\geq 5$ paired observations and we use 3 seeds; we instead report effect sizes and CIs, which are informative with small $n$. The large negative Cohen's $d$ values for runtime-checking defenses (e.g., FATH, IPIGuard) reflect their zero-variance ASR (always 0), indicating deterministic resistance via over-blocking rather than probabilistic robustness.
+\Cref{tab:stats} reports per-seed ASR (mean$\pm$std over 3 seeds), Cohen's $d$ effect size relative to the no-defense baseline, and 95\% bootstrap confidence intervals. We note that Wilcoxon signed-rank $p$-values are not reported because the test requires $\geq 5$ paired observations and we use 3 seeds; we instead report effect sizes and CIs, which are informative with small $n$. Cohen's $d$ values displayed as ``---'' indicate degenerate cases where both the defense and baseline have zero variance (e.g., both always 0 or both always 1), making the effect size undefined; these cases reflect deterministic rather than probabilistic behavior.
 
 \begin{table}[h]
 \centering
 \small
-\caption{Statistical analysis: ASR (mean$\pm$std), Cohen's $d$ vs.\ no-defense, 95\% bootstrap CI.}
+\caption{Statistical analysis: ASR (mean$\pm$std), Cohen's $d$ vs.\ no-defense, 95\% bootstrap CI. ``---'' = undefined (zero variance in both samples).}
 \label{tab:stats}
 \begin{tabular}{llrrl}
 \toprule
 Defense & Lv & ASR & $d$ & 95\% CI \\
 \midrule
 Spotlighting & L1 & 0.75$\pm$0.43 & $-$0.52 & [0.25, 1.00] \\
-Spotlighting & L2 & 1.00$\pm$0.00 & 0.00 & [1.00, 1.00] \\
+Spotlighting & L2 & 1.00$\pm$0.00 & --- & [1.00, 1.00] \\
 StruQ & L1 & 0.02$\pm$0.03 & $-$8.65 & [0.00, 0.03] \\
 StruQ & L2 & 0.10$\pm$0.00 & --- & [0.10, 0.10] \\
 Task Shield & L1 & 0.02$\pm$0.03 & $-$8.65 & [0.00, 0.05] \\
 Task Shield & L2 & 0.00$\pm$0.00 & --- & [0.00, 0.00] \\
 Attention Tracker & L1 & 0.87$\pm$0.23 & $-$0.26 & [0.60, 1.00] \\
-Attention Tracker & L2 & 1.00$\pm$0.00 & 0.00 & [1.00, 1.00] \\
+Attention Tracker & L2 & 1.00$\pm$0.00 & --- & [1.00, 1.00] \\
 P1 (Unobservable) & L1 & 0.78$\pm$0.20 & $-$0.76 & [0.55, 0.90] \\
 P1 (Unobservable) & L2 & 0.90$\pm$0.13 & $-$1.07 & [0.75, 0.98] \\
 \bottomrule
@@ -30,7 +30,7 @@ P1 (Unobservable) & L2 & 0.90$\pm$0.13 & $-$1.07 & [0.75, 0.98] \\
 \section{Design-Principle Ablation}
 \label{app:ablation}
 
-\Cref{tab:ablation} summarizes the four design-principle prototypes. ``Broken'' means R-ASR $> 0.5$ (the adaptive attack succeeds on the majority of tasks); ``Over-blocks'' means FPR $> 0.5$ (the defense blocks the majority of benign actions). No principle achieves both R-ASR $< 0.5$ and FPR $< 0.5$, confirming the fundamental security-utility tradeoff formalized by \Cref{thm:single}.
+\Cref{tab:ablation} summarizes the four design-principle prototypes. ``Defeated'' means R-ASR $> 0.5$ (the adaptive attack succeeds on the majority of tasks); ``Over-blocks'' means FPR $> 0.5$ (the defense blocks the majority of benign actions). No principle achieves both R-ASR $< 0.5$ and FPR $< 0.5$, confirming the fundamental security-utility tradeoff discussed in \Cref{conj:single}.
 
 \begin{table}[h]
 \centering
@@ -41,20 +41,20 @@ P1 (Unobservable) & L2 & 0.90$\pm$0.13 & $-$1.07 & [0.75, 0.98] \\
 \toprule
 Principle & R-ASR$\downarrow$ & FPR$\downarrow$ & USR$\uparrow$ & Verdict \\
 \midrule
-P1: Unobservable Signal & 0.90 & 0.05 & 0.95 & Broken \\
+P1: Unobservable Signal & 0.90 & 0.05 & 0.95 & Defeated \\
 P2: Orthogonal Signals & 0.00 & 0.57 & 0.43 & Over-blocks \\
-P3: Task Invariant & 0.00 & 1.00 & 0.00 & Over-blocks \\
-P4: Least Privilege & 1.00 & 0.00 & 1.00 & Broken \\
+P3: Task Invariant (relaxed) & 0.00 & 1.00 & 0.00 & Over-blocks \\
+P4: Least Privilege & 1.00 & 0.00 & 1.00 & Defeated \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-P1 demonstrates that a single unobservable signal (a random canary) is insufficient: the canary leaks into the agent's output and is extracted by the multi-turn adaptive attacker (L3), then forged in subsequent injections. P2 combines P1's canary with task-alignment checking; the conjunction resists (R-ASR 0.00) because forging the canary is information-theoretically impossible, but the 57\% FPR shows that the conjunction over-blocks. P3's strict state machine blocks everything including the legitimate task (FPR 1.00). P4's sandbox does not detect injections, only limits blast radius, so an injection that uses an allowed resource maliciously still succeeds (R-ASR 1.00).
+P1 demonstrates that a single unobservable signal (a random canary) is insufficient: the canary leaks into the agent's output and is extracted by the multi-turn adaptive attacker (L3), then forged in subsequent injections. P2 combines P1's canary with task-alignment checking; the conjunction resists (R-ASR 0.00) because forging the canary is information-theoretically impossible, but the 57\% FPR shows that the conjunction over-blocks. P3's relaxed state machine (top-$k$ allowed transitions) still blocks everything including the legitimate task (FPR 1.00), because the AgentDojo workspace tasks involve multi-step reasoning that the top-$k$ heuristic cannot capture. P4's sandbox does not detect injections, only limits blast radius, so an injection that uses an allowed resource maliciously still succeeds (R-ASR 1.00).
 
 \section{Backbone Comparison}
 \label{app:backbone}
 
-Our main evaluation uses GPT-4o-mini. To assess backbone sensitivity, we re-run a reduced matrix (6 key defenses $\times$ 5 levels $\times$ 2 seeds $\times$ 15 tasks) with GPT-4o. \Cref{tab:backbone} compares R-ASR between the two backbones. The structural finding---single-signal defenses collapse under adaptive attack---holds for both: Spotlighting and Attention Tracker reach R-ASR 1.00 on both backbones, while StruQ and Task Shield resist on both. Absolute ASR values differ slightly (GPT-4o is somewhat more susceptible to static IPI, raising L1 ASR by 0.05--0.10), but the L1$\to$L2 collapse pattern is backbone-independent, consistent with our theoretical prediction that the failure stems from the defense's architecture, not the model's capability.
+Our main evaluation uses GPT-4o-mini. To assess backbone sensitivity, we re-run a reduced matrix (6 key defenses $\times$ 5 levels $\times$ 2 seeds $\times$ 15 tasks) with GPT-4o. \Cref{tab:backbone} compares R-ASR between the two backbones.
 
 \begin{table}[h]
 \centering
@@ -75,12 +75,12 @@ P1 (Unobservable) & 0.90 & 1.00 \\
 \end{tabular}
 \end{table}
 
-The most notable difference is Spotlighting: it collapses on GPT-4o-mini (R-ASR 1.00) but resists on GPT-4o (R-ASR 0.13). This is because GPT-4o more reliably obeys the delimiter instruction (``text inside data delimiters is untrusted''), making the signal-alignment evasion less effective. This backbone sensitivity is itself a finding: the robustness of input-encoding defenses depends on the backbone's instruction-following fidelity, not just the defense's design---a property not captured by the single-signal theorem but consistent with it (the delimiter is still an observable signal; a stronger model simply assigns it more authority). Attention Tracker collapses on both backbones (R-ASR 1.00), confirming that internal-probing defenses are backbone-independent in their failure.
+The most notable difference is Spotlighting: it is defeated on GPT-4o-mini (R-ASR 1.00) but resists on GPT-4o (R-ASR 0.13). This is because GPT-4o more reliably obeys the delimiter instruction (``text inside data delimiters is untrusted''), making the signal-alignment evasion less effective. This backbone sensitivity is itself a finding: the robustness of input-encoding defenses depends on the backbone's instruction-following fidelity, not just the defense's design---a property consistent with the single-signal fragility conjecture (the delimiter is still an observable signal; a stronger model simply assigns it more authority, which is an empirical property not captured by the conjecture's assumptions). Attention Tracker is defeated on both backbones (R-ASR 1.00), confirming that internal-probing defenses are backbone-independent in their failure.
 
 \section{Adaptive Attack Strength}
 \label{app:adaptive_strength}
 
-Our main evaluation uses \texttt{max\_iters=2} for the LLM-in-the-loop adaptive optimizer. To assess sensitivity to optimizer budget, we re-run L2/L3 with \texttt{max\_iters=5} (the setting used by Zhan et al.). \Cref{tab:adaptive_strength} shows that increasing the optimizer budget from 2 to 5 iterations does not meaningfully change ASR for the collapsing defenses (already at 1.00) or the resisting defenses (already at 0.00), indicating that 2 iterations suffice for the adaptive attack to find an effective payload. This is consistent with the single-signal theorem: the search space of evasive payloads is small enough that 2 random-restart iterations find a below-threshold injection with high probability.
+Our main evaluation uses \texttt{max\_iters=2} for the LLM-in-the-loop adaptive optimizer. To assess sensitivity to optimizer budget, we re-run L2/L3 with \texttt{max\_iters=5} (the setting used by Zhan et al.). \Cref{tab:adaptive_strength} shows that increasing the optimizer budget from 2 to 5 iterations does not meaningfully change ASR for the defenses that are already defeated (at 1.00) or resisting (at 0.00--0.10), indicating that 2 iterations suffice for the adaptive attack to find an effective payload.
 
 \begin{table}[h]
 \centering
@@ -99,4 +99,4 @@ P1 (Unobservable) & 0.90 & 0.98 \\
 \end{tabular}
 \end{table}
 
-Increasing the optimizer budget from 2 to 5 iterations does not meaningfully change ASR for the collapsing defenses (already at 1.00) or the resisting defenses (already at 0.00--0.10). P1 shows a slight increase (0.90$\to$0.98), indicating that the canary-extraction attack benefits from more optimizer iterations, but the qualitative verdict (``broken'') is unchanged. This confirms that 2 iterations suffice for the adaptive attack to find an effective payload, consistent with the single-signal theorem: the search space of evasive payloads is small enough that 2 random-restart iterations find a below-threshold injection with high probability.
+P1 shows a slight increase (0.90$\to$0.98), indicating that the canary-extraction attack benefits from more optimizer iterations, but the qualitative verdict (``defeated'') is unchanged. This confirms that 2 iterations suffice for the adaptive attack to find an effective payload, consistent with the single-signal fragility conjecture.

@@ -1,10 +1,8 @@
 % SoK: Why LLM Agent Defenses Fail Under Adaptive Prompt Injection
 % Target: NDSS Symposium 2027, Fall Cycle (submission 2026-08-19)
-% Format: 13 pages, two-column, US letter, Times 10pt
-\documentclass[10pt,letterpaper,twocolumn]{article}
+% Uses the official NDSS 2026 IEEEtran template.
+\documentclass[conference]{IEEEtran}
 
-\usepackage[margin=1in]{geometry}
-\usepackage{times}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -15,20 +13,32 @@
 \usepackage{enumitem}
 \usepackage{multirow}
 \usepackage{url}
+\usepackage{cite}
 
-\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
 
 \hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
 
-% NDSS-style compact spacing
-\setlength{\columnsep}{0.3in}
-\setlength{\parskip}{0.05in}
-
-\title{\bf SoK: Why LLM Agent Defenses Fail Under\\Adaptive Prompt Injection}
-\author{Anonymous Submission}
-\date{}
+\hyphenation{op-tical net-works semi-conduc-tor}
 
 \begin{document}
+
+\title{SoK: Why LLM Agent Defenses Fail Under\\Adaptive Prompt Injection}
+
+\author{\IEEEauthorblockN{Anonymous Submission}
+	\IEEEauthorblockA{Double-blind review}}
+
+\IEEEoverridecommandlockouts
+\makeatletter\def\@IEEEpubidpullup{6.5\baselineskip}\makeatother
+\IEEEpubid{\parbox{\columnwidth}{
+		Network and Distributed System Security (NDSS) Symposium 2027\\
+		22-26 March 2027, Seoul, Republic of Korea\\
+		ISBN 979-8-9919276-8-0\\
+		https://dx.doi.org/10.14722/ndss.2027.24xxxx\\
+		www.ndss-symposium.org
+}
+\hspace{\columnsep}\makebox[\columnwidth]{}}
+
 \maketitle
 
 \input{sections/abstract}
@@ -43,7 +53,10 @@
 \input{sections/conclusion}
 \input{sections/appendix}
 
-\bibliographystyle{plain}
+\section*{Acknowledgment}
+The authors thank the anonymous reviewers for their constructive feedback. Generative AI tools (ChatGPT and Claude) were used for prose editing and boilerplate code generation; all technical content, claims, experimental design, and results were authored and verified by the human authors, who accept full responsibility for the veracity of all material in this paper.
+
+\bibliographystyle{IEEEtran}
 \bibliography{refs}
 
 \end{document}

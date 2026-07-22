@@ -7,7 +7,26 @@ The key insight behind our framework is that an adaptive attack is not ``a stron
 
 \subsection{Evasion Strategies}
 
-We define six evasion strategies, one per defense class plus a default:
+We define six evasion strategies, one per defense class plus a default. \Cref{tab:strategies} provides a concrete payload example for each.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Evasion strategies: target defense class and example payload.}
+\label{tab:strategies}
+\begin{tabular}{p{0.18\columnwidth}p{0.15\columnwidth}p{0.55\columnwidth}}
+\toprule
+Strategy & Target & Example Payload Fragment \\
+\midrule
+Signal Align. & IE & \texttt{<data>[goal]</data>} (reuses defense delimiter) \\
+Boundary Blur & SQ & \texttt{\{"\_meta":\{"instr":[goal]\}\}} (smuggles in JSON data field) \\
+Intent Disguise & RC & ``To complete the user's request, first: [goal]'' \\
+Atten.\ Redist. & IP & [filler]\verb|\n|[goal]\verb|\n|[filler] (dilutes attention) \\
+Channel Split & AR & \texttt{[PART\_A][goal\_a][PART\_B][goal\_b]} (fragments) \\
+Paraphrase & TB & [EN]\,[goal] / [FR]\,[goal] / [B64]\,[goal] \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \paragraph{Signal Alignment (for IE).}
 The defense wraps untrusted content in a delimiter (e.g., \texttt{<data>}). The attacker includes the same delimiter within the injection, so the LLM cannot distinguish the defense's wrapping from the injection's wrapping. The injection payload is wrapped in the \texttt{<INFORMATION>} jailbreak template (as in AgentDojo's ImportantInstructions attack), which claims to be a user-authored message, dramatically increasing LLM compliance.
@@ -33,4 +52,4 @@ The framework materializes attacks at five levels (\Cref{sec:background}). L1 us
 
 \subsection{Composability}
 
-The framework is composable: an attack is a (level, strategy) pair, and the framework materializes the right instance from a registry. Adding a new attack or defense requires only registering it---the evaluation harness, benchmarks, and analysis pipeline are defense- and attack-agnostic. This design is what allows us to scale the evaluation to 13 defenses and 5 attack levels without modifying the harness for each combination.
+The framework is composable: an attack is a (level, strategy) pair, and the framework materializes the right instance from a registry. Adding a new attack or defense requires only registering it---the evaluation harness, benchmarks, and analysis pipeline are defense- and attack-agnostic. This design is what allows us to scale the evaluation to 12 defenses and 5 attack levels without modifying the harness for each combination.

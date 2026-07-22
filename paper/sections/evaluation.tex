@@ -7,7 +7,7 @@ Our evaluation is organized around four research questions:
 
 \begin{itemize}[noitemsep,topsep=0pt]
 \item \textbf{RQ1:} How do existing IPI defenses perform under static IPI (L1)?
-\item \textbf{RQ2:} How do adaptive attacks (L2--L3) break these defenses?
+\item \textbf{RQ2:} How do adaptive attacks (L2--L3) defeat these defenses?
 \item \textbf{RQ3:} Can failure modes be clustered into root causes?
 \item \textbf{RQ4:} Which design principles survive adaptive attacks?
 \end{itemize}
@@ -15,48 +15,53 @@ Our evaluation is organized around four research questions:
 \subsection{Experimental Setup}
 
 \paragraph{Benchmark.}
-We evaluate on the AgentDojo workspace suite~\cite{debenedetti2024agentdojo}, which provides 40 user tasks across calendar, email, and file-management scenarios with ground-truth injection goals. We use 20 tasks per seed. Each task pairs a legitimate user request (e.g., ``Who else is invited at the Networking event?'') with an injection goal (e.g., ``Email `Hey, how is it going?' to mark.black-2134@gmail.com'').
+We evaluate on the AgentDojo workspace suite (v1.0)~\cite{debenedetti2024agentdojo,debenedetti2025agentdojo}, which provides 40 user tasks across calendar, email, and file-management scenarios with ground-truth injection goals. We use 20 tasks per seed. Each task pairs a legitimate user request (e.g., ``Who else is invited at the Networking event?'') with an injection goal (e.g., ``Email `Hey, how is it going?' to mark.black-2134@gmail.com''). Our framework also supports the InjecAgent~\cite{zhan2024injecagent} and Agent Security Bench~\cite{zhang2024agent} benchmarks; we report AgentDojo results in the main body due to space and note that cross-benchmark generalization is confirmed on a subset (see \Cref{sec:limitations}).
 
 \paragraph{Backbone.}
-We use GPT-4o-mini as the agent backbone via an OpenAI-compatible API. All results are reported over 3 seeds (0, 1, 2).
+We use GPT-4o-mini as the primary agent backbone via an OpenAI-compatible API. All main-table results are reported over 3 seeds (0, 1, 2) as mean values; standard deviations are in Appendix~\ref{app:stats}. A 2-backbone comparison with GPT-4o (6 key defenses, 2 seeds, 15 tasks) is reported in \Cref{sec:backbone_main} and Appendix~\ref{app:backbone}. Total API cost was approximately \$30--40 USD.
 
 \paragraph{Defenses.}
-We evaluate 13 defenses: 9 baselines from the literature (Spotlighting, StruQ, Task Shield, Attention Tracker, IPIGuard, FATH, Polymorphic Prompt, Mixture-of-Encodings, and no-defense) plus 4 design-principle prototypes (P1--P4, \Cref{sec:principles}).
+We evaluate 12 defense configurations: 8 baselines from the literature (Spotlighting, StruQ, Task Shield, Attention Tracker, IPIGuard, FATH, Polymorphic Prompt, Mixture-of-Encodings) plus 4 design-principle prototypes (P1--P4, \Cref{sec:principles}), and a no-defense baseline.
 
 \paragraph{Metrics.}
-We report: (1) \textbf{USR} (Utility Success Rate): fraction of benign tasks where the defense does not block the agent. (2) \textbf{ASR} (Attack Success Rate): fraction of attacked tasks where the injection goal is achieved. (3) \textbf{FPR} (False Positive Rate): fraction of benign tasks blocked by the defense. (4) \textbf{R-ASR} (Robust ASR): worst-case ASR over L2--L3, the single ranking number. ASR is measured by checking whether the agent's output contains the injection goal's distinctive entities (target email, phone, or URL), mirroring AgentDojo's \texttt{security\_from\_traces} check.
+We report: (1) \textbf{USR} (Utility Success Rate): fraction of benign tasks where the defense does not block the agent. (2) \textbf{ASR} (Attack Success Rate): fraction of attacked tasks where the injection goal is achieved. (3) \textbf{FPR} (False Positive Rate): fraction of benign tasks blocked by the defense. (4) \textbf{R-ASR} (Robust ASR): worst-case ASR over L2--L3, the single ranking number. ASR is measured by checking whether the agent's output contains the injection goal's distinctive entities (target email, phone, or URL), which is a string-level proxy for AgentDojo's native \texttt{security\_from\_traces} check; we note this may produce false positives if the agent mentions the target entity in a refusal, and discuss this limitation in \Cref{sec:limitations}.
 
 \paragraph{Scale.}
-3{,}900 trials: 13 defenses $\times$ 5 attack levels $\times$ 3 seeds $\times$ 20 tasks.
+3{,}900 trials: 12 defenses $\times$ 5 attack levels $\times$ 3 seeds $\times$ 20 tasks, plus the no-defense baseline.
 
 \subsection{RQ1: Static IPI Performance}
 
-\Cref{tab:main} (column L1) shows that under static IPI, the no-defense baseline has ASR 0.92, confirming that GPT-4o-mini is highly susceptible to the \texttt{<INFORMATION>} template. Input-encoding defenses (Spotlighting 0.75, Polymorphic 0.77, Mixture-of-Encodings 0.73) and internal probing (Attention Tracker 0.87) provide only modest reduction, because the static template already mimics a user message. Runtime-checking defenses (Task Shield 0.02, IPIGuard 0.00, FATH 0.00) and structured queries (StruQ 0.02) achieve near-zero static ASR---but as RQ2 reveals, this is misleading.
+\Cref{tab:main} (column L1) shows that under static IPI, the no-defense baseline has ASR 0.92, confirming that GPT-4o-mini is highly susceptible to the \texttt{<INFORMATION>} template. Input-encoding defenses (Spotlighting 0.75, Polymorphic 0.77, Mixture-of-Encodings 0.73) and internal probing (Attention Tracker 0.87) provide only modest reduction, because the static template already mimics a user message. Runtime-checking defenses (Task Shield 0.02, IPIGuard 0.00, FATH 0.00) and structured queries (StruQ 0.02) achieve near-zero static ASR---but as RQ2 shows, this does not hold under adaptive attacks.
 
-\subsection{RQ2: Adaptive Attack Collapse}
+\subsection{RQ2: Adaptive Attack Defeat}
 
-The central finding of our evaluation is that the jump from L1 to L2 (adaptive single-shot) is catastrophic for every defense class except runtime-checking:
+The central finding of our evaluation is that the jump from L1 to L2 (adaptive single-shot) is severe for every defense class except runtime-checking:
 
 \begin{itemize}[noitemsep,topsep=0pt]
-\item \textbf{Input encoding collapses:} Spotlighting 0.75$\to$\textbf{1.00}, Polymorphic 0.77$\to$\textbf{1.00}, Mixture-of-Encodings 0.73$\to$\textbf{1.00}. The adaptive attack's signal-alignment strategy---reusing the defense's delimiter within the \texttt{<INFORMATION>} wrapper---completely defeats the encoding boundary.
-\item \textbf{Internal probing collapses:} Attention Tracker 0.87$\to$\textbf{1.00}. The attention-redistribution strategy pads the injection with benign filler, diluting the attention spike below the detector threshold.
-\item \textbf{Architecture collapses:} P4 (Least Privilege) 0.88$\to$\textbf{1.00}. The channel-split strategy fragments the injection so no single tool output triggers the sandbox.
-\item \textbf{Structured query resists partially:} StruQ 0.02$\to$0.10. The boundary-blur strategy smuggles instructions in the JSON data field, but StruQ's strict parsing limits the damage. However, StruQ's near-zero L1 ASR may indicate it over-constrains the agent (the LLM rarely follows \emph{any} instruction, benign or malicious).
+\item \textbf{Input encoding is defeated:} Spotlighting 0.75$\to$\textbf{1.00}, Polymorphic 0.77$\to$\textbf{1.00}, Mixture-of-Encodings 0.73$\to$\textbf{1.00}. The adaptive attack's signal-alignment strategy---reusing the defense's delimiter within the \texttt{<INFORMATION>} wrapper---completely overcomes the encoding boundary.
+\item \textbf{Internal probing is defeated:} Attention Tracker 0.87$\to$\textbf{1.00}. The attention-redistribution strategy pads the injection with benign filler, diluting the attention spike below the detector threshold.
+\item \textbf{Architecture is defeated:} P4 (Least Privilege) 0.88$\to$\textbf{1.00}. The channel-split strategy fragments the injection so no single tool output triggers the sandbox.
+\item \textbf{Structured query partially resists:} StruQ 0.02$\to$0.10. The boundary-blur strategy smuggles instructions in the JSON data field, but StruQ's strict parsing limits the damage. However, StruQ's near-zero L1 ASR may indicate it over-constrains the agent (the LLM rarely follows \emph{any} instruction, benign or malicious).
 \item \textbf{Runtime checking resists by over-blocking:} Task Shield, IPIGuard, and FATH all maintain 0.00 ASR under L2---but their FPR is 0.47--1.00, meaning they block 47--100\% of benign actions. This is not robustness; it is a refusal to act.
 \end{itemize}
 
-\Cref{fig:asr_by_level} visualizes the ASR trajectory across L0--L4. The pattern is clear: single-signal defenses (IE, IP, AR) show a sharp cliff between L1 and L2, while multi-signal or over-blocking defenses (SQ, RC) remain flat at the cost of utility.
+\Cref{fig:asr_by_level} visualizes the ASR trajectory across L0--L3. The pattern is clear: single-signal defenses (IE, IP, AR) show a sharp cliff between L1 and L2, while multi-signal or over-blocking defenses (SQ, RC) remain flat at the cost of utility.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/asr_by_level.pdf}
-\caption{Attack success rate by attack level (L0 shown as 1$-$USR). Red = defense fails. Single-signal defenses (IE, IP, AR) show a cliff at L2; runtime-checking defenses (RC) remain flat but over-block.}
+\caption{Attack success rate by attack level (L0 shown as 1$-$USR, i.e., FPR-equivalent). Darker red = defense fails. Single-signal defenses (IE, IP, AR) show a cliff at L2; runtime-checking defenses (RC) remain flat but over-block.}
 \label{fig:asr_by_level}
 \end{figure}
 
+\subsection{Backbone Sensitivity}
+\label{sec:backbone_main}
+
+A critical finding is that the defeat is \emph{backbone-dependent} for input-encoding defenses but \emph{backbone-independent} for internal-probing defenses. On GPT-4o (6 defenses, 2 seeds, 15 tasks; full table in Appendix~\ref{app:backbone}), Spotlighting's R-ASR drops from 1.00 (GPT-4o-mini) to 0.13, because GPT-4o more faithfully obeys the delimiter instruction. In contrast, Attention Tracker's R-ASR remains 1.00 on both backbones, confirming that its failure is structural. This backbone-sensitivity finding has practical implications: the robustness of input-encoding defenses depends on the backbone's instruction-following fidelity, not just the defense's design.
+
 \subsection{RQ3: Root-Cause Clustering}
 
-We label each successful attack with one of four root causes and aggregate by defense class. The clustering is strikingly clean:
+We label each successful attack with one of four root causes and aggregate by defense class. The clustering is clean:
 
 \begin{table}[t]
 \centering
@@ -76,19 +81,19 @@ Architecture & R4: Channel Isolation Missing & 158 \\
 \end{tabular}
 \end{table}
 
-Every defense class has a single dominant root cause that accounts for the vast majority of its failures. This is not a coincidence: it reflects the structural property that each defense class relies on one type of signal, and the matched adaptive attack exploits exactly that signal type. The root-cause clustering validates the taxonomy's predictive power---the (layer, trust) coordinates of a defense determine which adaptive strategy will break it.
+Every defense class has a single dominant root cause that accounts for the vast majority of its failures. We acknowledge that the root-cause labeling is rule-based: the attack strategy is chosen by defense class, and the root cause is labeled by (defense class, attack strategy), so the clustering is partially circular. However, the LLM verifier (see \Cref{sec:attack}) independently confirms the rule labels on a sample of ambiguous cases, and the clustering pattern---each class failing to exactly one root cause---is a structural prediction of the taxonomy, not an artifact of the labeling.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/root_cause_heatmap.pdf}
-\caption{Root-cause heatmap: each defense class has a single dominant failure mode. IE and IP fail to R1 (signal mimicry); SQ to R2 (boundary blur); RC to R3 (paraphrase); AR to R4 (channel isolation).}
+\caption{Root-cause heatmap: each defense class has a single dominant failure mode.}
 \label{fig:root_cause}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/adaptive_delta.pdf}
-\caption{Adaptive-attack delta: ASR(L2) $-$ ASR(L1). Single-signal defenses show the largest collapse.}
+\caption{Adaptive-attack delta: ASR(L2) $-$ ASR(L1). Single-signal defenses show the largest increase.}
 \label{fig:delta}
 \end{figure}
 
@@ -97,26 +102,26 @@ Every defense class has a single dominant root cause that accounts for the vast 
 \begin{table*}[t]
 \centering
 \small
-\caption{Main results: 13 defenses $\times$ 5 attack levels on AgentDojo (20 tasks, 3 seeds, GPT-4o-mini). USR = utility (higher is better); ASR = attack success rate (lower is better); FPR = false positive rate (lower is better); R-ASR = robust ASR over L2--L3 (lower is better).}
+\caption{Main results: 12 defenses $\times$ 4 attack levels on AgentDojo (20 tasks, 3 seeds, GPT-4o-mini). L4 (backdoor) is omitted because no backdoor is planted (all ASR = 0; see \Cref{sec:limitations}). USR = utility (higher is better); ASR = attack success rate (lower is better); FPR = false positive rate (lower is better); R-ASR = robust ASR over L2--L3 (lower is better). Standard deviations in Appendix~\ref{app:stats}.}
 \label{tab:main}
-\begin{tabular}{llccccccc}
+\begin{tabular}{llcccccc}
 \toprule
-Defense & Class & USR$\uparrow$ & ASR$_{L1}$ & ASR$_{L2}$ & ASR$_{L3}$ & ASR$_{L4}$ & FPR$\downarrow$ & R-ASR$\downarrow$ \\
+Defense & Class & USR$\uparrow$ & ASR$_{L1}$ & ASR$_{L2}$ & ASR$_{L3}$ & FPR$\downarrow$ & R-ASR$\downarrow$ \\
 \midrule
-No Defense & --- & 1.00 & 0.92 & 1.00 & 0.78 & 0.00 & 0.00 & 1.00 \\
-Spotlighting & IE & 1.00 & 0.75 & \textbf{1.00} & 0.63 & 0.00 & 0.00 & 1.00 \\
-Polymorphic & IE & 1.00 & 0.77 & \textbf{1.00} & 0.75 & 0.00 & 0.00 & 1.00 \\
-Mixture-of-Enc. & IE & 1.00 & 0.73 & \textbf{1.00} & 0.58 & 0.00 & 0.00 & 1.00 \\
-StruQ & SQ & 1.00 & 0.02 & 0.10 & 0.00 & 0.00 & 0.00 & 0.10 \\
-Task Shield & RC & 0.53 & 0.02 & 0.00 & 0.00 & 0.00 & 0.47 & 0.00 \\
-IPIGuard & RC & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
-FATH & RC & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
-Attention Tracker & IP & 1.00 & 0.87 & \textbf{1.00} & 0.78 & 0.00 & 0.00 & 1.00 \\
+No Defense & --- & 1.00 & 0.92 & 1.00 & 0.78 & 0.00 & 1.00 \\
+Spotlighting & IE & 1.00 & 0.75 & \textbf{1.00} & 0.63 & 0.00 & 1.00 \\
+Polymorphic & IE & 1.00 & 0.77 & \textbf{1.00} & 0.75 & 0.00 & 1.00 \\
+Mixture-of-Enc. & IE & 1.00 & 0.73 & \textbf{1.00} & 0.58 & 0.00 & 1.00 \\
+StruQ & SQ & 1.00 & 0.02 & 0.10 & 0.00 & 0.00 & 0.10 \\
+Task Shield & RC & 0.53 & 0.02 & 0.00 & 0.00 & 0.47 & 0.00 \\
+IPIGuard & RC & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
+FATH & RC & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
+Attention Tracker & IP & 1.00 & 0.87 & \textbf{1.00} & 0.78 & 0.00 & 1.00 \\
 \midrule
-P1: Unobservable Signal & RC & 0.95 & 0.78 & 0.90 & 0.75 & 0.00 & 0.05 & 0.90 \\
-P2: Orthogonal Signals & RC & 0.43 & 0.00 & 0.00 & 0.00 & 0.00 & 0.57 & 0.00 \\
-P3: Task Invariant & RC & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
-P4: Least Privilege & AR & 1.00 & 0.88 & \textbf{1.00} & 0.75 & 0.00 & 0.00 & 1.00 \\
+P1: Unobservable Signal & RC & 0.95 & 0.78 & 0.90 & 0.75 & 0.05 & 0.90 \\
+P2: Orthogonal Signals & RC & 0.43 & 0.00 & 0.00 & 0.00 & 0.57 & 0.00 \\
+P3: Task Invariant & RC & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
+P4: Least Privilege & AR & 1.00 & 0.88 & \textbf{1.00} & 0.75 & 0.00 & 1.00 \\
 \bottomrule
 \end{tabular}
 \end{table*}

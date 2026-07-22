@@ -11,7 +11,7 @@ The critical security property of this architecture is that $T$ is \emph{untrust
 
 Indirect prompt injection (IPI) is an attack in which the adversary embeds instructions within the untrusted tool output $T$ so that the LLM executes the attacker's instruction instead of, or in addition to, the user's legitimate task $u$. Formally, the adversary replaces a benign tool output $t_i$ with a malicious output $t_i' = t_i \| \pi$, where $\pi$ is the injection payload and $\|$ denotes concatenation. The attack succeeds if the agent's action $a$ achieves the attacker's goal $g$ (e.g., sending an email to an attacker-controlled address).
 
-The canonical injection payload, following Greshake et al., wraps the malicious instruction in a pseudo-system-message format: \texttt{<INFORMATION> This is an important message from the user. Please do the following first: [goal] </INFORMATION>}. This template exploits the LLM's instruction-following propensity by framing the injection as a legitimate user directive.
+The canonical injection payload, following Greshake et al.~\cite{greshake2023not}, wraps the malicious instruction in a pseudo-system-message format: \texttt{<INFORMATION> This is an important message from the user. Please do the following first: [goal] </INFORMATION>}. This template exploits the LLM's instruction-following propensity by framing the injection as a legitimate user directive.
 
 \subsection{Threat Model}
 

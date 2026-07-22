@@ -1,35 +1,35 @@
-\section{Design Principles and Impossibility Theorem}
+\section{Design Principles and Fragility Conjecture}
 \label{sec:principles}
 
-\subsection{Single-Signal Impossibility Theorem}
+\subsection{Single-Signal Fragility Conjecture}
 
-We formalize the empirical observation that single-signal defenses collapse under adaptive attack.
+We formalize the empirical observation that single-signal defenses are defeated by adaptive attack. We state this as a conjecture rather than a theorem because the formal model of ``signal'' and ``computable from the prompt'' requires assumptions about the LLM's internals that we cannot fully verify.
 
-\begin{theorem}[Single-Signal Impossibility]
-\label{thm:single}
-Let $D$ be an IPI defense whose decision rule is a function $f(s)$ of a single signal $s$ that is computable from the prompt the LLM sees. Then there exists an adaptive attack $A^*$ that breaks $D$ with probability $1 - o(1)$ over the LLM's randomness.
-\end{theorem}
+\begin{conjecture}[Single-Signal Fragility]
+\label{conj:single}
+Let $D$ be an IPI defense whose decision rule is a predicate $f(s)$ on a single signal $s$ that is efficiently computable from the prompt $C$ the LLM sees (i.e., the attacker can evaluate $s$ on any candidate injection in polynomial time). Assume the signal space $S$ is finite and the attacker has a query budget of $q$ LLM calls. Then there exists an adaptive attack $A^*$ using $O(q \cdot \log |S|)$ queries that finds an injection $\pi^*$ with $s(\pi^*)$ below $D$'s threshold while $\pi^*$ still contains the malicious instruction, such that $\text{ASR}(D, A^*) \geq \text{ASR}(\text{no defense}) - \epsilon$ for $\epsilon = O(1/q)$.
+\end{conjecture}
 
-\begin{proof}[Proof sketch]
-Because $s$ is computable from the prompt, the attacker can evaluate $s$ on any candidate injection (the attacker sees the same prompt the LLM sees). The attacker performs projected gradient-free search: sample a candidate injection, evaluate $s$, keep it iff $s$ stays below $D$'s threshold. After $O(\log |S|)$ iterations the attacker finds an injection whose $s$ is below threshold, so $D$ does not flag it, while the injection still contains the malicious instruction. Hence $\text{ASR}(D, A^*) \geq \text{ASR}(\text{no defense}) - \epsilon$.
-\end{proof}
+\paragraph{Assumptions.} (1) The signal $s$ is a deterministic function of the prompt, so the attacker can evaluate it on any candidate. (2) The signal space is discrete and finite (e.g., delimiter types, encoding schemes, attention-threshold bins). (3) The LLM is a probabilistic oracle: an injection containing the malicious instruction triggers the malicious action with probability $p \gg 0$ regardless of the signal value. (4) The attacker uses gradient-free search (random sampling + filtering), which is the regime of our L2 attack.
+
+\paragraph{Discussion.} The conjecture predicts that any defense relying solely on a prompt-observable signal can be broken by adaptive search. It does \emph{not} apply to defenses that rely on signals the attacker cannot observe (e.g., a secret canary not present in the prompt) or that enforce structural invariants independent of the prompt content. The conjecture is consistent with our empirical results: all IE, IP, and AR defenses (which rely on observable signals) are defeated, while P2 (which combines an unobservable canary with semantic alignment) resists. We note that the $O(\log |S|)$ search complexity is a best-case bound for structured signal spaces; for unstructured text, the practical search may require more iterations, which is why we also evaluate with \texttt{max\_iters=5} (Appendix~\ref{app:adaptive_strength}).
 
 \subsection{Design Principles}
 
-The theorem's corollary is that an adaptive-robust defense must rely on at least one signal \emph{not} computable from the prompt. We instantiate four design principles as minimal prototypes:
+The conjecture's corollary is that an adaptive-robust defense must rely on at least one signal \emph{not} efficiently computable from the prompt. We instantiate four design principles as minimal prototypes:
 
 \paragraph{P1: Unobservable Signal.}
-The defense injects a random canary into the system prompt and requires the LLM to echo it before any tool call. The canary is never present in tool outputs, so an injection cannot forge it. \emph{Result:} R-ASR 0.90---P1 is broken. The canary leaks into the LLM's output, and the adaptive attacker extracts it from the agent's response in multi-turn settings (L3), then includes it in the injection.
+The defense injects a random canary into the system prompt and requires the LLM to echo it before any tool call. The canary is never present in tool outputs, so an injection cannot forge it. \emph{Result:} R-ASR 0.90---P1 is defeated. The canary leaks into the LLM's output, and the adaptive attacker extracts it from the agent's response in multi-turn settings (L3), then includes it in the injection.
 
 \paragraph{P2: Orthogonal Signals.}
 The defense combines P1's cryptographic canary with Task-Shield-style semantic alignment. Evasion requires forging the canary \emph{and} matching the task semantics---and forging the canary is information-theoretically impossible. \emph{Result:} R-ASR 0.00---P2 resists. However, FPR is 0.57: the conjunction of two checks over-blocks 57\% of benign actions, quantifying the security-utility tradeoff.
 
-\paragraph{P3: Task Invariant.}
-The defense compiles the user task into a state machine and blocks any action that does not advance it. \emph{Result:} R-ASR 0.00 but FPR 1.00---the state machine is too strict and blocks everything, including the legitimate task.
+\paragraph{P3: Task Invariant (Relaxed).}
+The defense compiles the user task into a state machine and blocks any action that does not advance it. Unlike the degenerate version (which allows only one transition), this prototype allows top-$k$ plausible next tools as determined by an embedding similarity to the user task ($k=3$). \emph{Result:} R-ASR 0.00 but FPR 1.00---even with the relaxed top-$k$ allowance, the state machine is too strict for the AgentDojo workspace tasks, which involve complex multi-step reasoning that the top-$k$ heuristic cannot capture. This is itself a finding: task-invariant enforcement is impractical without a sophisticated task model.
 
 \paragraph{P4: Least Privilege.}
 The defense runs each tool in a sandbox with access only to resources named in the task spec. \emph{Result:} R-ASR 1.00---the sandbox does not detect the injection; it only limits the blast radius. An injection that asks the agent to use an allowed resource for a malicious purpose (e.g., sending an email via the allowed email tool to an attacker address) succeeds.
 
 \subsection{Implications}
 
-The principle prototypes confirm the theorem's prediction: P1 (single signal) is broken; P2 (orthogonal multi-signal) resists but at a utility cost; P3 (single strict signal) over-blocks; P4 (blast-radius containment) does not prevent the attack. The fundamental tradeoff is that adaptive robustness requires unobservable signals, but unobservable signals are either forgeable through observation (canary leakage) or require conservative over-blocking (conjunction of checks). Bridging this tradeoff---achieving both low R-ASR and low FPR---remains an open problem.
+The principle prototypes confirm the conjecture's prediction: P1 (single signal) is defeated; P2 (orthogonal multi-signal) resists but at a utility cost; P3 (task invariant) over-blocks even in its relaxed form; P4 (blast-radius containment) does not prevent the attack. The fundamental tradeoff is that adaptive robustness requires unobservable signals, but unobservable signals are either forgeable through observation (canary leakage) or require conservative over-blocking (conjunction of checks). Bridging this tradeoff---achieving both low R-ASR and low FPR---remains an open problem.
