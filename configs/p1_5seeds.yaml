@@ -1,0 +1,18 @@
+# P1: Extend to 5 seeds for Wilcoxon tests (gpt-4o-mini, key defenses)
+# 6 defenses x L1+L2 only x gpt-4o-mini x 2 additional seeds (3,4) x 20 tasks
+# ~480 base calls. Cost: ~$2-3. Runtime: ~15-20 min.
+
+defenses:
+  - none
+  - spotlighting
+  - struq
+  - task_shield
+  - attention_tracker
+  - p1_unobservable_signal
+
+levels: [L1, L2]
+backbones: [openai:gpt-4o-mini]
+seeds: [3, 4]
+benchmarks: [agentdojo]
+max_tasks_per_benchmark: 20
+adaptive_max_iters: 2

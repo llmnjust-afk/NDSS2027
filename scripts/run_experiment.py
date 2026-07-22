@@ -155,9 +155,11 @@ def main():
     ckpt_file = checkpoint_path.open("a")
     n_new = 0
     for bench_name in cfg["benchmarks"]:
-        # AgentDojoAdapter takes suite_name + max_per_suite; others take nothing.
+        # AgentDojoAdapter takes suite_name + max_per_suite; InjecAgent takes data_path.
         if bench_name == "agentdojo":
             adapter = BENCHMARK_FACTORY[bench_name](suite_name="workspace", max_per_suite=cfg.get("max_tasks_per_benchmark", 20))
+        elif bench_name == "injecagent":
+            adapter = BENCHMARK_FACTORY[bench_name](data_path=cfg.get("injecagent_data_path", "/data/lab/InjecAgent/data"))
         else:
             adapter = BENCHMARK_FACTORY[bench_name]()
         tasks = adapter.load_tasks()

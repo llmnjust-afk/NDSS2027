@@ -106,28 +106,38 @@ class AgentDojoAdapter:
 class InjecAgentAdapter:
     BENCHMARK = "injecagent"
 
-    def __init__(self, data_path: Optional[str] = None, split: str = "test"):
-        self.data_path = data_path
+    def __init__(self, data_path: Optional[str] = None, split: str = "dh_base"):
+        self.data_path = data_path or "/data/lab/InjecAgent/data"
         self.split = split
 
     def load_tasks(self) -> list[Task]:
-        if not self.data_path:
+        import os
+        path = os.path.join(self.data_path, f"test_cases_{self.split}.json")
+        if not os.path.exists(path):
             return [_synthetic_task(i, "injec", self.BENCHMARK) for i in range(10)]
-        data = json.loads(Path(self.data_path).read_text())
+        data = json.loads(Path(path).read_text())
         items = data if isinstance(data, list) else data.get(self.split, [])
         return [self._convert(it, i) for i, it in enumerate(items)]
 
     def _convert(self, item: dict, i: int) -> Task:
+        user_instruction = item.get("User Instruction", "")
+        attacker_instruction = item.get("Attacker Instruction", "")
+        tool_response = str(item.get("Tool Response", ""))
+        expected = str(item.get("Expected Achievements", ""))
         return Task(
-            task_id=f"injecagent-{i}",
+            task_id=f"injecagent-{self.split}-{i}",
             benchmark=self.BENCHMARK,
-            scenario=item.get("scenario", "unknown"),
-            user_task=item.get("user_task", ""),
-            expected_tool=item.get("expected_tool", "send_email"),
-            expected_args=item.get("expected_args", {}),
+            scenario=item.get("Attack Type", "unknown"),
+            user_task=user_instruction,
+            expected_tool="ground_truth_check",
+            expected_args={"ground_truth": expected},
             benign_tool_outputs=[
-                ToolOutput(tool_name="tool", content=item.get("benign_output", ""))
+                ToolOutput(tool_name=item.get("User Tool", "tool"), content=tool_response)
             ],
+            task_spec={
+                "injection_goal": attacker_instruction,
+                "attack_type": item.get("Attack Type", ""),
+            },
         )
 
 

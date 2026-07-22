@@ -1,0 +1,19 @@
+# P0: Open-source backbone (Llama-3.1-8B via vLLM on lab GPU)
+# 6 key defenses x 4 levels (L0-L3) x Llama-3.1-8B x 2 seeds x 15 tasks
+# ~720 base calls. Cost: $0 (local GPU). Runtime: ~30-60 min.
+
+defenses:
+  - none
+  - spotlighting
+  - struq
+  - task_shield
+  - attention_tracker
+  - p1_unobservable_signal
+  - p2_orthogonal_signals
+
+levels: [L0, L1, L2, L3]
+backbones: [local:meta-llama/Llama-3.1-8B-Instruct]
+seeds: [0, 1]
+benchmarks: [agentdojo]
+max_tasks_per_benchmark: 15
+adaptive_max_iters: 2
