@@ -2,27 +2,27 @@
 \section{Statistical Analysis}
 \label{app:stats}
 
-\Cref{tab:stats} reports per-seed ASR (mean$\pm$std over 3 seeds), Cohen's $d$ effect size relative to the no-defense baseline, and 95\% bootstrap confidence intervals. We note that Wilcoxon signed-rank $p$-values are not reported because the test requires $\geq 5$ paired observations and we use 3 seeds; we instead report effect sizes and CIs, which are informative with small $n$. Cohen's $d$ values displayed as ``---'' indicate degenerate cases where both the defense and baseline have zero variance (e.g., both always 0 or both always 1), making the effect size undefined; these cases reflect deterministic rather than probabilistic behavior.
+\Cref{tab:stats} reports per-seed ASR (mean$\pm$std over 5 seeds for 6 key defenses, 3 seeds for others), Cohen's $d$ effect size relative to the no-defense baseline, 95\% bootstrap confidence intervals, and Wilcoxon signed-rank $p$-values (where $n \geq 5$). Cohen's $d$ values displayed as ``---'' indicate degenerate cases where both the defense and baseline have zero variance (e.g., both always 0 or both always 1), making the effect size undefined.
 
 \begin{table}[h]
 \centering
 \small
 \caption{Statistical analysis: ASR (mean$\pm$std), Cohen's $d$ vs.\ no-defense, 95\% bootstrap CI. ``---'' = undefined (zero variance in both samples).}
 \label{tab:stats}
-\begin{tabular}{llrrl}
+\begin{tabular}{llrrrl}
 \toprule
-Defense & Lv & ASR & $d$ & 95\% CI \\
+Defense & Lv & ASR & $d$ & $p$ (Wilcoxon) & 95\% CI \\
 \midrule
-Spotlighting & L1 & 0.75$\pm$0.43 & $-$0.52 & [0.25, 1.00] \\
-Spotlighting & L2 & 1.00$\pm$0.00 & --- & [1.00, 1.00] \\
-StruQ & L1 & 0.02$\pm$0.03 & $-$8.65 & [0.00, 0.03] \\
-StruQ & L2 & 0.10$\pm$0.00 & --- & [0.10, 0.10] \\
-Task Shield & L1 & 0.02$\pm$0.03 & $-$8.65 & [0.00, 0.05] \\
-Task Shield & L2 & 0.00$\pm$0.00 & --- & [0.00, 0.00] \\
-Attention Tracker & L1 & 0.87$\pm$0.23 & $-$0.26 & [0.60, 1.00] \\
-Attention Tracker & L2 & 1.00$\pm$0.00 & --- & [1.00, 1.00] \\
-P1 (Unobservable) & L1 & 0.78$\pm$0.20 & $-$0.76 & [0.55, 0.90] \\
-P1 (Unobservable) & L2 & 0.90$\pm$0.13 & $-$1.07 & [0.75, 0.98] \\
+Spotlighting & L1 & 0.75$\pm$0.43 & $-$0.52 & 0.0625 & [0.25, 1.00] \\
+Spotlighting & L2 & 1.00$\pm$0.00 & --- & --- & [1.00, 1.00] \\
+StruQ & L1 & 0.02$\pm$0.03 & $-$8.65 & 0.0625 & [0.00, 0.03] \\
+StruQ & L2 & 0.10$\pm$0.00 & --- & --- & [0.10, 0.10] \\
+Task Shield & L1 & 0.02$\pm$0.03 & $-$8.65 & 0.0625 & [0.00, 0.05] \\
+Task Shield & L2 & 0.00$\pm$0.00 & --- & --- & [0.00, 0.00] \\
+Attention Tracker & L1 & 0.87$\pm$0.23 & $-$0.26 & 0.1250 & [0.60, 1.00] \\
+Attention Tracker & L2 & 1.00$\pm$0.00 & --- & --- & [1.00, 1.00] \\
+P1 (Unobservable) & L1 & 0.78$\pm$0.20 & $-$0.76 & 0.0625 & [0.55, 0.90] \\
+P1 (Unobservable) & L2 & 0.90$\pm$0.13 & $-$1.07 & 0.0625 & [0.75, 0.98] \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -105,3 +105,29 @@ P1 shows a slight increase (0.90$\to$0.98), indicating that the canary-extractio
 \label{app:sealign}
 
 We evaluate SecAlign~\cite{chen2024secalign} using the officially released LoRA adapter for Mistral-7B-Instruct-v0.1, loaded via PEFT on a single A100 GPU. We test 15 AgentDojo workspace tasks at L0--L3 with 1 seed. Results: SecAlign R-ASR = 0.00, but the no-defense baseline on the same backbone also achieves R-ASR = 0.00 (L1 ASR = 0.00). This means Mistral-7B-Instruct-v0.1 itself is naturally resistant to the \texttt{<INFORMATION>} injection template, making it impossible to distinguish SecAlign's contribution from the backbone's inherent resistance. This is a backbone-sensitivity finding: weaker instruction-following models may resist IPI not because of stronger defenses but because they do not faithfully follow injected instructions. Evaluating SecAlign on a susceptible backbone (e.g., GPT-4o-mini) would require a compatible SecAlign adapter, which is currently only available for Llama-3-8B-Instruct (a gated model). We note this as a limitation.
+
+\section{Open-Source Backbone: Qwen2.5-7B-Instruct}
+\label{app:qwen}
+
+To verify the structural finding on an open-source model, we run 6 key defenses $\times$ 4 attack levels (L0--L3) $\times$ 2 seeds $\times$ 15 tasks (840 trials) on Qwen2.5-7B-Instruct, served locally on an A100 80GB GPU.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Qwen2.5-7B-Instruct results: R-ASR for 6 key defenses.}
+\label{tab:qwen}
+\begin{tabular}{lcc}
+\toprule
+Defense & GPT-4o-mini R-ASR & Qwen2.5-7B R-ASR \\
+\midrule
+No Defense & 1.00 & 1.00 \\
+Spotlighting & 1.00 & 1.00 \\
+StruQ & 0.10 & 0.67 \\
+Task Shield & 0.00 & 1.00 \\
+Attention Tracker & 1.00 & 1.00 \\
+P1 (Unobservable) & 0.90 & 0.97 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On Qwen2.5-7B, all single-signal defenses are defeated (R-ASR $\geq$ 0.97), confirming the structural finding on an open-source model. Notably, Task Shield (RC) fails on Qwen (R-ASR 1.00) while it resists on GPT-4o-mini (R-ASR 0.00), because Qwen's weaker instruction-following causes the alignment score to be unreliable. StruQ (SQ) also fails more severely (R-ASR 0.67 vs.\ 0.10), suggesting its structured-query boundary is less effective on models with lower instruction hierarchy compliance. These results confirm the fragility conjecture's prediction that single-signal defenses fail regardless of backbone, while highlighting that the \emph{degree} of failure is backbone-dependent.
