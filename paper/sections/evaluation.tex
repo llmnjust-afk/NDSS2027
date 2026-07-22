@@ -42,7 +42,7 @@ Input-encoding defenses are the strongest performers: Polymorphic (ASR 0.14, Uti
 
 \subsection{RQ2: Security-Utility Tradeoff}
 
-The central finding from end-to-end evaluation is a sharp security-utility tradeoff: defenses that achieve low ASR tend to also destroy Utility, while defenses that preserve Utility have moderate ASR. \Cref{fig:tradeoff} visualizes this---no defense reaches the ideal zone (low ASR \emph{and} high Utility).
+The central finding from end-to-end evaluation is a sharp security-utility tradeoff: defenses that achieve low ASR tend to also destroy Utility, while defenses that preserve Utility have moderate ASR. \Cref{tab:main} visualizes this---no defense reaches the ideal zone (low ASR \emph{and} high Utility).
 
 \begin{itemize}[noitemsep,topsep=0pt]
 \item \textbf{Input encoding is the best tradeoff:} Polymorphic, Mixture-of-Encodings, and Spotlighting cluster in the favorable region (ASR 0.14--0.21, Utility 0.67--0.73). They reduce ASR by 71--81\% relative to baseline while \emph{increasing} Utility above the no-defense ceiling (0.19), indicating they suppress injected instructions without blocking legitimate actions.
@@ -51,93 +51,10 @@ The central finding from end-to-end evaluation is a sharp security-utility trade
 \item \textbf{Tool-allow-list defenses are moderate:} IPIGuard (ASR 0.38, Utility 0.06) and P3 (ASR 0.42, Utility 0.02) block some attacks via static tool allow-lists but still sacrifice Utility and miss a substantial fraction of injections.
 \end{itemize}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/asr_by_level.pdf}
-\caption{ASR across attack levels. Cell values are ASR (L1--L3) or FPR (L0). Red = defense fails. Single-signal defenses (IE, IP, AR) show a cliff at L2; runtime-checking defenses (RC) remain flat but over-block. Left color bars indicate defense class.}
-\label{fig:asr_by_level}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/adaptive_delta.pdf}
-\caption{Static (L1) vs.\ adaptive (L2) ASR. The L1$\to$L2 delta is annotated for defenses with $>$0.15 increase. IE/IP/AR defenses show the largest cliff.}
-\label{fig:delta}
-\end{figure}
-
-\subsection{Backbone Sensitivity}
+\subsection{Base Model Capability Ceiling}
 \label{sec:backbone_main}
 
-A critical finding is that the defeat is \emph{backbone-dependent} for input-encoding defenses but \emph{backbone-independent} for internal-probing defenses. \Cref{fig:backbone} compares R-ASR across 3 backbones (GPT-4o-mini, GPT-4o, Qwen2.5-7B-Instruct). On GPT-4o, Spotlighting's R-ASR drops from 1.00 to 0.13, because GPT-4o more faithfully obeys the delimiter instruction. On Qwen2.5-7B, all single-signal defenses are defeated (R-ASR $\geq$ 0.97), and even Task Shield fails (R-ASR 1.00) because Qwen's weaker instruction-following makes the alignment score unreliable. In contrast, Attention Tracker's R-ASR remains 1.00 on all three backbones, confirming that its failure is structural. \Cref{fig:tradeoff} visualizes the security-utility tradeoff: no defense reaches the ideal zone (low R-ASR \emph{and} low FPR), with single-signal defenses clustering in the high-R-ASR/low-FPR corner and runtime-checking defenses in the opposite corner.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/backbone_comparison.pdf}
-\caption{R-ASR across 3 backbones. IE defenses are backbone-dependent (Spotlighting resists on GPT-4o); IP defenses are backbone-independent (Attention Tracker fails on all).}
-\label{fig:backbone}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.9\columnwidth]{figures/tradeoff.pdf}
-\caption{Security-utility tradeoff. Each point is a defense; ideal zone (green) requires both low R-ASR and low FPR. No defense reaches the ideal zone.}
-\label{fig:tradeoff}
-\end{figure}
-
-\subsection{RQ3: Root-Cause Clustering}
-
-We label each successful attack with one of four root causes and aggregate by defense class. The clustering is clean:
-
-\begin{table}[t]
-\centering
-\small
-\caption{Dominant root cause per defense class (count of successful attacks).}
-\label{tab:root_cause}
-\begin{tabular}{llr}
-\toprule
-Defense Class & Dominant Root Cause & Count \\
-\midrule
-Input Encoding & R1: Observable Signal Mimicry & 433 \\
-Internal Probing & R1: Observable Signal Mimicry & 159 \\
-Structured Query & R2: Boundary Blur & 7 \\
-Runtime Checking & R3: Semantic Paraphrase & 147 \\
-Architecture & R4: Channel Isolation Missing & 158 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Every defense class has a single dominant root cause that accounts for the vast majority of its failures. We acknowledge that the root-cause labeling is rule-based: the attack strategy is chosen by defense class, and the root cause is labeled by (defense class, attack strategy), so the clustering is partially circular. To mitigate this, we conducted a blind annotation study: one author manually labeled 100 successful attack transcripts without knowing which defense or attack strategy was used, achieving 87\% agreement with the rule-based labels (Cohen's $\kappa$ = 0.78, ``substantial agreement''). Disagreements were primarily cases where multiple root causes applied (e.g., an attack using both signal alignment and intent disguise). The LLM verifier (see \Cref{sec:attack}) independently confirms the rule labels on a sample of ambiguous cases. The clustering pattern---each class failing to exactly one dominant root cause---is a structural prediction of the taxonomy, not solely an artifact of the labeling.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/root_cause_heatmap.pdf}
-\caption{Root-cause heatmap: each defense class has a single dominant failure mode.}
-\label{fig:root_cause}
-\end{figure}
-
-\subsection{Cross-Benchmark Validation}
-
-To confirm the structural finding is not an artifact of the AgentDojo benchmark, we re-run 7 key defenses on the InjecAgent benchmark (15 tasks, 2 seeds, Gpt-4o-mini). \Cref{tab:cross_bench} shows that the failure pattern replicates: Spotlighting R-ASR=0.93, Attention Tracker R-ASR=0.93, while StruQ resists (R-ASR=0.23) and runtime-checking defenses over-block. This cross-benchmark replication confirms the finding is defense-structural, not benchmark-specific.
-
-\begin{table}[t]
-\centering
-\small
-\caption{Cross-benchmark validation: R-ASR on AgentDojo vs.\ InjecAgent (GPT-4o-mini).}
-\label{tab:cross_bench}
-\begin{tabular}{lcc}
-\toprule
-Defense & AgentDojo R-ASR & InjecAgent R-ASR \\
-\midrule
-No Defense & 1.00 & 0.97 \\
-Spotlighting & 1.00 & 0.93 \\
-StruQ & 0.10 & 0.23 \\
-Task Shield & 0.00 & 0.17 \\
-Attention Tracker & 1.00 & 0.93 \\
-P1 (Unobservable) & 0.90 & 0.90 \\
-P2 (Orthogonal) & 0.00 & 0.17 \\
-\bottomrule
-\end{tabular}
-\end{table}
+A critical observation is that GPT-4o-mini's Utility on AgentDojo workspace tasks is only 0.19---80\% of tasks are not completed even without a defense. This capability ceiling is essential for interpreting over-blocking claims: a defense with Utility $\approx$ 0.02 is not necessarily over-blocking 98\% of tasks; much of this reflects the model's own inability to complete the tasks. By comparing Task Shield to the no-defense baseline on identical (seed, user\_task, injection\_task) triples, we find that Task Shield genuinely over-blocks only 14.4\% of tasks (those the baseline completes but Task Shield blocks), while 80\% of its Utility=0 cases are tasks the baseline also fails. Future work should evaluate on stronger backbones (e.g., GPT-4o, Claude) where the baseline Utility is higher, enabling cleaner separation of defense over-blocking from model weakness.
 
 \subsection{Main Results Table}
 
