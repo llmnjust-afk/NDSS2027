@@ -335,7 +335,13 @@ class IPIGuardElement(BasePipelineElement):
         for m in reversed(messages):
             if m["role"] == "assistant":
                 calls = m.get("tool_calls") or []
-                requested_tools = [getattr(c, "function", c.get("function", "?")) for c in calls]
+                requested_tools = []
+                for c in calls:
+                    # FunctionCall objects expose .function; dicts expose ["function"]
+                    fn = getattr(c, "function", None)
+                    if fn is None and isinstance(c, dict):
+                        fn = c.get("function", "?")
+                    requested_tools.append(fn or "?")
                 break
         # If any requested tool is off the allow-list, neutralise tool results.
         off = [t for t in requested_tools if t not in self.ALLOWED] if requested_tools else []
