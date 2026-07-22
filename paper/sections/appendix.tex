@@ -100,3 +100,8 @@ P1 (Unobservable) & 0.90 & 0.98 \\
 \end{table}
 
 P1 shows a slight increase (0.90$\to$0.98), indicating that the canary-extraction attack benefits from more optimizer iterations, but the qualitative verdict (``defeated'') is unchanged. This confirms that 2 iterations suffice for the adaptive attack to find an effective payload, consistent with the single-signal fragility conjecture.
+
+\section{SecAlign Evaluation}
+\label{app:sealign}
+
+We evaluate SecAlign~\cite{chen2024secalign} using the officially released LoRA adapter for Mistral-7B-Instruct-v0.1, loaded via PEFT on a single A100 GPU. We test 15 AgentDojo workspace tasks at L0--L3 with 1 seed. Results: SecAlign R-ASR = 0.00, but the no-defense baseline on the same backbone also achieves R-ASR = 0.00 (L1 ASR = 0.00). This means Mistral-7B-Instruct-v0.1 itself is naturally resistant to the \texttt{<INFORMATION>} injection template, making it impossible to distinguish SecAlign's contribution from the backbone's inherent resistance. This is a backbone-sensitivity finding: weaker instruction-following models may resist IPI not because of stronger defenses but because they do not faithfully follow injected instructions. Evaluating SecAlign on a susceptible backbone (e.g., GPT-4o-mini) would require a compatible SecAlign adapter, which is currently only available for Llama-3-8B-Instruct (a gated model). We note this as a limitation.

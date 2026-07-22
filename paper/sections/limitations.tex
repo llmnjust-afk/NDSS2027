@@ -10,5 +10,8 @@ This work studies attacks on LLM agents. All attacks are evaluated in a controll
 \paragraph{Use of Generative AI.}
 Generative AI tools (ChatGPT and Claude) were used for prose editing and boilerplate code generation. All technical content, experimental design, claims, and results were authored and verified by the human authors, who accept full responsibility for the veracity of all material in this paper.
 
+\paragraph{Implementation Fidelity.}
+Of the 8 literature baselines, 3 use original or near-original code (Spotlighting, StruQ, SecAlign via LoRA adapter) and 5 are reimplemented from the papers' descriptions (Task Shield, Attention Tracker, IPIGuard, FATH, Polymorphic Prompt, Mixture-of-Encodings). The reimplementations follow the algorithms described in the original papers but may differ in implementation details (e.g., exact prompt templates, threshold values). We note this as a limitation: our ASR numbers for reimplemented defenses reflect our implementations, not the original authors' code. The framework is designed to accept original implementations via the registry interface, and we encourage defense authors to integrate their code for more faithful evaluation.
+
 \paragraph{Reproducibility.}
 All code, configurations, and results are available at the project repository (anonymized for double-blind review). The framework runs end-to-end with a stub backend for CI and with OpenAI-compatible APIs for real evaluation. Checkpointing supports resuming interrupted runs.
