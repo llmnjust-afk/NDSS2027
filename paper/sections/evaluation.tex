@@ -24,10 +24,10 @@ We use GPT-4o-mini (API snapshot \texttt{gpt-4o-mini-2024-07-18}) as the primary
 We evaluate 12 defense configurations: 8 baselines from the literature (Spotlighting, StruQ, Task Shield, Attention Tracker, IPIGuard, FATH, Polymorphic Prompt, Mixture-of-Encodings) plus 4 design-principle prototypes (P1--P4, \Cref{sec:principles}), and a no-defense baseline.
 
 \paragraph{Metrics.}
-We report: (1) \textbf{USR} (Utility Success Rate): fraction of benign tasks where the defense does not block the agent. (2) \textbf{ASR} (Attack Success Rate): fraction of attacked tasks where the injection goal is achieved. (3) \textbf{FPR} (False Positive Rate): fraction of benign tasks blocked by the defense. (4) \textbf{R-ASR} (Robust ASR): worst-case ASR over L2--L3, the single ranking number. ASR is measured by checking whether the agent's \emph{proposed action} (not the full response) contains the injection goal's distinctive entities (target email, phone, or URL). This is a string-level proxy for AgentDojo's native \texttt{security\_from\_traces} check. We acknowledge two limitations: (1) false positives are possible if the agent mentions the target entity in a refusal (``I will not email mark.black@...''); we mitigate this by checking only the parsed action output, not free-text responses, and estimate the false-positive rate at $<$5\% based on manual inspection of 50 samples; (2) false negatives are possible if the agent performs an equivalent malicious action without using the exact target entity (e.g., sending to a different attacker address). We do not verify actual tool side effects (e.g., whether the email was actually sent), as our evaluation environment does not execute tools. These limitations are discussed in \Cref{sec:limitations}.
+We report: (1) \textbf{USR} (Unblocked Success Rate): fraction of benign tasks where the defense does not block the agent. We note that USR measures \emph{non-interference}, not task completion: a defense with USR=1.00 does not guarantee the agent correctly completed the user task. StruQ exemplifies this: USR=1.00 but the LLM may not follow any instruction (benign or malicious) due to over-structured prompting. We flag this as a limitation and recommend that future work use AgentDojo's native task-utility evaluator. (2) \textbf{ASR} (Attack Success Rate): fraction of attacked tasks where the injection goal's distinctive entities (target email, phone, or URL) appear in the agent's \emph{proposed action} (not the full response). We estimate the false-positive rate at $<$5\% based on manual inspection of 50 samples. We do not verify actual tool side effects, as our evaluation environment does not execute tools. (3) \textbf{FPR} (False Positive Rate): fraction of benign tasks blocked by the defense. Note FPR = 1 $-$ USR, so the two are redundant; we report both for clarity. (4) \textbf{R-ASR} (Robust ASR): worst-case ASR over L2--L3.
 
 \paragraph{Scale.}
-3{,}900 trials in the main experiment (12 defenses $\times$ 5 attack levels $\times$ 3 seeds $\times$ 20 tasks, plus the no-defense baseline), with an additional 480 trials for seeds 4--5 on 6 key defenses at L1--L2, enabling Wilcoxon signed-rank tests ($n=5$). The total API cost was approximately \$30--40 USD.
+The main experiment comprises 10 defenses $\times$ 3 attack levels (L0--L2) $\times$ 3 seeds (0--2) $\times$ 20 tasks = 1{,}800 trials, plus L3 for a subset and additional seeds (3--4) for 6 key defenses at L1--L2 (480 trials), totaling approximately 2{,}300 trials. L4 (backdoor) is not implemented (no backdoor planted) and is excluded from all counts. Supplemental experiments (InjecAgent, Qwen, threshold sweep, Settings A--C) add approximately 3{,}000 trials. Total API cost was approximately \$30--40 USD.
 
 \subsection{RQ1: Static IPI Performance}
 
@@ -137,29 +137,38 @@ P2 (Orthogonal) & 0.00 & 0.17 \\
 
 \subsection{Main Results Table}
 
+\Cref{tab:main} reports results for the 10 defenses we can faithfully evaluate in our API-based pipeline. Attention Tracker (IP) requires access to model internals (attention weights) not available via API; our implementation uses a token-frequency proxy. We report its results separately in \Cref{sec:proxy_results} and do not include it in the main quantitative conclusions. P4 (Least Privilege) requires real OS-level sandboxing; our implementation is a prompt-level simulation, so we discuss it qualitatively (\Cref{sec:principles}) rather than in the main table.
+
 \begin{table*}[t]
 \centering
 \small
-\caption{Main results: 12 defenses $\times$ 4 attack levels on AgentDojo (20 tasks, 3 seeds, GPT-4o-mini). L4 (backdoor) is omitted because no backdoor is planted (all ASR = 0; see \Cref{sec:limitations}). USR = utility (higher is better); ASR = attack success rate (lower is better); FPR = false positive rate (lower is better); R-ASR = robust ASR over L2--L3 (lower is better). Standard deviations in Appendix~\ref{app:stats}.}
+\caption{Main results: 10 faithfully-evaluated defenses $\times$ 3 attack levels on AgentDojo (20 tasks, seeds 0--4, GPT-4o-mini). USR = utility (fraction of benign tasks not blocked; higher is better); ASR = attack success rate (lower is better); FPR = false positive rate (lower is better); R-ASR = robust ASR over L2--L3 (lower is better). Standard deviations and Wilcoxon tests in Appendix~\ref{app:stats}.}
 \label{tab:main}
-\begin{tabular}{llcccccc}
+\begin{tabular}{llccccc}
 \toprule
-Defense & Class & USR$\uparrow$ & ASR$_{L1}$ & ASR$_{L2}$ & ASR$_{L3}$ & FPR$\downarrow$ & R-ASR$\downarrow$ \\
+Defense & Class & USR$\uparrow$ & ASR$_{L1}$ & ASR$_{L2}$ & FPR$\downarrow$ & R-ASR$\downarrow$ \\
 \midrule
-No Defense & --- & 1.00 & 0.92 & 1.00 & 0.78 & 0.00 & 1.00 \\
-Spotlighting & IE & 1.00 & 0.75 & \textbf{1.00} & 0.63 & 0.00 & 1.00 \\
-Polymorphic & IE & 1.00 & 0.77 & \textbf{1.00} & 0.75 & 0.00 & 1.00 \\
-Mixture-of-Enc. & IE & 1.00 & 0.73 & \textbf{1.00} & 0.58 & 0.00 & 1.00 \\
-StruQ & SQ & 1.00 & 0.02 & 0.10 & 0.00 & 0.00 & 0.10 \\
-Task Shield & RC & 0.53 & 0.02 & 0.00 & 0.00 & 0.47 & 0.00 \\
-IPIGuard & RC & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
-FATH & RC & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
-Attention Tracker & IP & 1.00 & 0.87 & \textbf{1.00} & 0.78 & 0.00 & 1.00 \\
+No Defense & --- & 1.00 & 0.92 & 1.00 & 0.00 & 1.00 \\
+Spotlighting & IE & 1.00 & 0.75 & \textbf{1.00} & 0.00 & 1.00 \\
+Polymorphic & IE & 1.00 & 0.77 & \textbf{1.00} & 0.00 & 1.00 \\
+Mixture-of-Enc. & IE & 1.00 & 0.73 & \textbf{1.00} & 0.00 & 1.00 \\
+StruQ & SQ & 1.00 & 0.02 & 0.10 & 0.00 & 0.10 \\
+Task Shield$^*$ & RC & 0.53 & 0.02 & 0.00 & 0.47 & 0.00 \\
+IPIGuard & RC & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
+FATH & RC & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
 \midrule
-P1: Unobservable Signal & RC & 0.95 & 0.78 & 0.90 & 0.75 & 0.05 & 0.90 \\
-P2: Orthogonal Signals & RC & 0.43 & 0.00 & 0.00 & 0.00 & 0.57 & 0.00 \\
-P3: Task Invariant & RC & 0.00 & 0.00 & 0.00 & 0.00 & 1.00 & 0.00 \\
-P4: Least Privilege & AR & 1.00 & 0.88 & \textbf{1.00} & 0.75 & 0.00 & 1.00 \\
+P1: Echo Canary & RC & 0.95 & 0.78 & 0.90 & 0.05 & 0.90 \\
+P2: Orthogonal & RC & 0.43 & 0.00 & 0.00 & 0.57 & 0.00 \\
 \bottomrule
+\multicolumn{7}{l}{\footnotesize $^*$Task Shield at threshold=0.1 achieves FPR=0.07, ASR=0.00 (Appendix~\ref{app:threshold_sweep}).}
 \end{tabular}
 \end{table*}
+
+\subsection{Proxy-Defense Results}
+\label{sec:proxy_results}
+
+Two defenses cannot be faithfully evaluated in our API-based pipeline and are reported here as \emph{proxy} results, not as definitive evaluations:
+
+\paragraph{Attention Tracker (IP, proxy).} The original defense requires access to attention weights, which are not available via the GPT-4o-mini API. Our implementation uses a token-frequency heuristic (counting instruction-like verbs in untrusted text) as a proxy. Under this proxy, R-ASR = 1.00, but this result reflects the proxy's weakness, not the original Attention Tracker's. We include this result for completeness but do not claim it as a faithful evaluation of the IP defense class.
+
+\paragraph{P4: Least Privilege (AR, simulation).} Our implementation simulates sandboxing at the prompt level without real OS-level process isolation. R-ASR = 1.00, but as discussed in \Cref{sec:principles}, ASR is a category error for containment defenses. The qualitative finding---that sandboxing limits blast radius but does not detect injections---is correct, but the quantitative result should not be compared with detection-based defenses.
