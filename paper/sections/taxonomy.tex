@@ -13,7 +13,7 @@ We organize existing IPI defenses along two orthogonal axes: \emph{layer positio
 \subsection{Axis 1: Layer Position}
 
 \paragraph{Input Encoding (IE).}
-The defense transforms untrusted tool outputs before they enter the LLM context. Representative techniques include \emph{quoting} (wrapping in triple quotes), \emph{datamarking} (prefixing with a delimiter), and \emph{base64 encoding}. Spotlighting~\cite{hines2024defending} is the canonical example; Polymorphic Prompt~\cite{wang2025protect} randomizes the delimiter per call; Mixture-of-Encodings~\cite{zhang2025defense} applies multiple encodings and aggregates results. The shared signal the LLM is told to rely on is the delimiter or encoding boundary.
+The defense transforms untrusted tool outputs before they enter the LLM context. Representative techniques include \emph{quoting} (wrapping in triple quotes), \emph{datamarking} (prefixing with a delimiter), and \emph{base64 encoding}. Spotlighting~\cite{hines2024defending} is the canonical example; Polymorphic Prompt~\cite{wang2025protect} randomizes the delimiter per call; Mixture-of-Encodings~\cite{zhang2025defense} applies multiple encodings and aggregates results. We argue that each IE defense relies on a \emph{single observable signal}: Spotlighting's signal is the delimiter string \texttt{<|data|>} (visible in the prompt); Polymorphic's signal is the (randomized) delimiter (observable from query feedback); Mixture-of-Encodings' signal is the set of encoding boundaries (visible in the prompt). In all three cases, the defense's effectiveness depends entirely on the LLM recognizing and respecting this boundary---a single, prompt-observable signal that the attacker can observe and mimic.
 
 \paragraph{Structured Query (SQ).}
 The defense restructures the prompt so that trusted instructions and untrusted data occupy syntactically distinct positions. StruQ~\cite{chen2024struq} places the user instruction as the sole authority for tool calls and passes untrusted data as a separate JSON field. SecAlign~\cite{chen2024secalign} extends this with preference-optimized fine-tuning so the model learns to ignore instructions in the data field; however, SecAlign requires a fine-tuned checkpoint and is not evaluated in our API-based pipeline (see \Cref{sec:limitations}). The shared signal is the structural separation between the instruction channel and the data channel.
@@ -30,7 +30,7 @@ The defense restructures the agent system to limit the blast radius of a hijacke
 \subsection{Axis 2: Trust Assumption}
 
 \begin{itemize}[noitemsep,topsep=0pt]
-\item \textbf{No assumption (None):} The defense assumes nothing about the attacker's knowledge. All IE, SQ, and most RC defenses fall here.
+\item \textbf{Prompt-level:} The defense operates entirely at the prompt level and assumes the LLM will respect the boundary it draws (e.g., obeying delimiter instructions, following structured query format). This is not a ``no assumption'' stance: it assumes the model has sufficient instruction-following fidelity to honor the defense's marking. All IE, SQ, and most RC defenses fall here.
 \item \textbf{Formal boundary:} The defense assumes a formally verified boundary between trusted and untrusted channels that the attacker cannot cross without breaking a cryptographic or logical invariant. FATH and MELON~\cite{zhu2025melon} fall here.
 \item \textbf{TEE isolation:} The defense assumes hardware-enforced isolation (e.g., SGX, SEV-SNP) that the attacker cannot bypass. IsolateGPT and ACE fall here.
 \end{itemize}
@@ -48,18 +48,18 @@ The defense restructures the agent system to limit the blast radius of a hijacke
 \toprule
 Defense & Layer & Trust \\
 \midrule
-Spotlighting~\cite{hines2024defending} & IE & None \\
-Polymorphic~\cite{wang2025protect} & IE & None \\
-Mixture-of-Encodings~\cite{zhang2025defense} & IE & None \\
-StruQ~\cite{chen2024struq} & SQ & None \\
-SecAlign~\cite{chen2024secalign} (not eval.) & SQ & None \\
-Task Shield~\cite{jia2025task} & RC & None \\
-IPIGuard~\cite{an2025ipiguard} & RC & None \\
+Spotlighting~\cite{hines2024defending} & IE & Prompt-level \\
+Polymorphic~\cite{wang2025protect} & IE & Prompt-level \\
+Mixture-of-Encodings~\cite{zhang2025defense} & IE & Prompt-level \\
+StruQ~\cite{chen2024struq} & SQ & Prompt-level \\
+SecAlign~\cite{chen2024secalign} (not eval.) & SQ & Prompt-level \\
+Task Shield~\cite{jia2025task} & RC & Prompt-level \\
+IPIGuard~\cite{an2025ipiguard} & RC & Prompt-level \\
 FATH~\cite{wang2024fath} & RC & Formal \\
-Attention Tracker~\cite{hung2025attention} & IP & None \\
-P1: Unobservable Signal & RC & None \\
-P2: Orthogonal Signals & RC & None \\
-P3: Task Invariant & RC & None \\
+Attention Tracker~\cite{hung2025attention} (proxy) & IP & Prompt-level \\
+P1: Echo Canary & RC & Prompt-level \\
+P2: Orthogonal & RC & Prompt-level \\
+P3: Task Invariant & RC & Prompt-level \\
 P4: Least Privilege & AR & TEE \\
 \bottomrule
 \end{tabular}
