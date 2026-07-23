@@ -48,11 +48,11 @@ The defense was fine-tuned to resist a specific injection style. The attacker ro
 
 \subsection{Attack Levels}
 
-The framework materializes attacks at five levels (\Cref{sec:background}). L1 uses the \texttt{<INFORMATION>} template without defense-specific evasion. L2 applies the matched evasion strategy on top of the template. L3 iterates: the attacker observes the agent's response to the previous injection and uses an LLM-in-the-loop optimizer to refine the payload over up to 3 turns. L4 replaces the textual instruction with a backdoor trigger token.
+The framework materializes attacks at three levels (\Cref{sec:background}). L1 uses the \texttt{important\_instructions} template without defense-specific evasion. L2 applies the matched evasion strategy on top of the template. L0 (benign) runs the same tasks without any injection to measure the defense's utility ceiling.
 
 \subsection{Threat Model: How the Attacker Identifies the Defense Class}
 
-Our threat model assumes the attacker knows the defense \emph{class} (IE, SQ, RC, IP, AR) but not its secret parameters (e.g., the exact delimiter string, the randomization seed). In practice, defense-class identification can occur through: (1) public deployment documentation (many defenses are open-source), (2) probing the agent's behavior with test inputs to infer which class is active (e.g., observing that the agent receives delimited output suggests IE), or (3) insider knowledge. We do not count defense-class identification queries in the attack query budget, as we assume this information is obtained offline. This is a stronger threat model than pure black-box.
+Our threat model assumes the attacker knows the defense \emph{class} (IE, SQ, RC) but not its secret parameters (e.g., the exact delimiter string, the randomization seed). In practice, defense-class identification can occur through: (1) public deployment documentation (many defenses are open-source), (2) probing the agent's behavior with test inputs to infer which class is active (e.g., observing that the agent receives delimited output suggests IE), or (3) insider knowledge. We do not count defense-class identification queries in the attack query budget, as we assume this information is obtained offline. This is a stronger threat model than pure black-box.
 
 \subsection{L2 Payload Generation}
 

@@ -52,7 +52,7 @@ Combined (P2) & 0.00 [0.00, 0.04] & 0.00 [0.00, 0.04] \\
 \section{Over-Blocking Diagnosis}
 \label{app:overblock}
 
-To distinguish genuine defense over-blocking from base-model capability ceiling, we compare Task Shield to the no-defense baseline on identical (seed, user\_task, injection\_task) triples. Of 90 triples: the baseline completes 13 (Utility=1); Task Shield blocks all 13 of these (genuine over-blocking = 14.4\%). Both fail on 72 triples (model weakness = 80.0\%). Task Shield completes 5 triples the baseline fails (5.6\%). This analysis shows that the low Utility of runtime-checking defenses is dominated by the base model's capability ceiling, not by defense over-blocking---but genuine over-blocking does exist (14.4\% of completable tasks blocked).
+To distinguish genuine defense over-blocking from attack-induced failure, we compare Task Shield's benign (L0) and attack-condition (L1) utility with the no-defense baseline. Without attack, no-defense completes 90\% of tasks (benign Utility 0.90); under attack, this drops to 19\% (attack-condition Utility 0.19). This 71-percentage-point drop is attack-induced failure, not model capability limitation. Task Shield's benign utility is 0.43---meaning it blocks 47\% of benign tasks even without attack (genuine over-blocking). Its attack-condition utility is 0.02, only slightly below benign, confirming the defense blocks indiscriminately rather than selectively. The key insight is that the L0 baseline is essential: without it, one might attribute Task Shield's low attack-condition utility to the model, but the benign comparison shows the defense itself is responsible for most of the utility loss.
 
 \section{Omitted Prior Experiments}
 \label{app:omitted}

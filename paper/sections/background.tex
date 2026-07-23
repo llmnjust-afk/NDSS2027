@@ -37,14 +37,12 @@ A \emph{static} IPI attack uses a fixed payload template drawn from a predefined
 
 \subsection{Attack Levels}
 
-We define a five-level attack taxonomy that captures the escalating adversary capabilities:
+We define a three-level attack taxonomy that captures the escalating adversary capabilities:
 
 \begin{itemize}[noitemsep,topsep=0pt]
-\item \textbf{L0 (Benign):} No injection. Measures the defense's utility ceiling (USR).
-\item \textbf{L1 (Static IPI):} Fixed payload templates from a pool. The lower bound on defense robustness.
-\item \textbf{L2 (Adaptive Single-Shot):} A single injection crafted with knowledge of the defense class, using a matched evasion strategy.
-\item \textbf{L3 (Adaptive Multi-Turn):} The attacker observes the agent's response to previous injections and refines the payload over multiple turns.
-\item \textbf{L4 (Backdoor-Augmented):} The injection payload is a trigger token that activates a backdoor planted in the backbone LLM. No textual instruction is present, defeating all text-based defenses.
+\item \textbf{L0 (Benign):} No injection. Measures the defense's utility without attack, separating defense over-blocking from attack-induced failure.
+\item \textbf{L1 (Static IPI):} Fixed \texttt{important\_instructions} payload. The lower bound on defense robustness.
+\item \textbf{L2 (Adaptive Single-Shot):} A single injection crafted with knowledge of the defense class, using a matched evasion strategy (signal alignment, boundary blur, semantic paraphrase, auth forge, or canary forge).
 \end{itemize}
 
-L0--L3 are realized in our evaluation; L4 is discussed as a theoretical ceiling (see \Cref{sec:limitations}).
+All three levels are realized in our evaluation using AgentDojo's native end-to-end pipeline.
