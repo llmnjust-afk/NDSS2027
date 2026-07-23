@@ -33,54 +33,69 @@ We report both ASR and Utility because a defense that blocks everything achieves
 \paragraph{Scale.}
 The main experiment comprises 11 defenses $\times$ 3 conditions (L0 benign, L1 static, L2 adaptive) $\times$ 10 user tasks $\times$ 3 injection tasks (L1/L2) or 10 user tasks (L0) $\times$ 3 seeds = 2{,}310 trials, all using AgentDojo's native end-to-end pipeline. The P2 ablation (3 configurations $\times$ 90 = 270 trials) disentangles canary vs.\ alignment contributions. Total: 2{,}580 trials, 0 errors. Total API cost was approximately \$80--100 USD.
 
-\subsection{RQ1: Static vs.\ Adaptive Attack (L1 vs.\ L2)}
+\subsection{RQ1: Static (L1) vs.\ Matched-Suffix (L2) and Worst-Case Robust ASR}
 
-\Cref{tab:main} reports end-to-end results for all 11 defenses under three conditions: L0 (benign, no attack), L1 (static \texttt{important\_instructions} attack), and L2 (defense-class-matched adaptive attack). ASR and Utility are computed by AgentDojo's native evaluators on real tool-execution traces.
+\Cref{tab:main} reports end-to-end results for all 11 configurations under three conditions: L0 (benign, no attack), L1 (static \texttt{important\_instructions} payload), and L2 (a defense-matched suffix). ASR and Utility are computed by AgentDojo's native evaluators on real tool-execution traces.
 
-The most striking finding is that \emph{adaptive attacks do not defeat input-encoding defenses---they are weaker than static attacks}. Under L1, IE defenses achieve ASR 0.14--0.21; under L2 (matched signal-alignment evasion), ASR \emph{drops} to 0.04--0.08. The adaptive evasion suffix, which attempts to claim the injection is trusted system data, appears to dilute the injection's instruction-following strength more than it evades the delimiter boundary. This directly contradicts the proxy-based prediction (proxy ASR was 1.00 for all IE defenses under L2), demonstrating that proxy metrics can reverse the qualitative conclusion.
+We first note a methodological point that governs how these numbers must be read. Our L2 is a defense-matched \emph{suffix} appended to the static payload; it is one hand-authored candidate, not a search over an attack space. Descriptively, for input-encoding defenses the matched suffix yields \emph{lower} ASR than the static payload (L1 0.14--0.21 vs.\ matched-suffix 0.04--0.08). This does \emph{not} mean an adaptive attacker is weaker: a rational attacker retains the option of using the plain static payload. We therefore report the \emph{capability-monotonic} quantity
+\[
+\text{Robust ASR} = \operatorname*{mean}_{\text{unit}}\; \max_{a \in \mathcal{A}_{L2}} \mathrm{ASR}(a),
+\quad \mathcal{A}_{L1}\subseteq\mathcal{A}_{L2},
+\]
+where the L2 candidate set $\mathcal{A}_{L2}$ contains the exact L1 payload plus the matched suffix, a generic authority suffix, a length-matched control, and $k$ paraphrases (\Cref{sec:attack}). By construction Robust ASR $\geq \mathrm{ASR}_{L1}$. For the input-encoding defenses the Robust ASR stays at the L1 level (0.14--0.21): none of the matched or paraphrase candidates exceed the plain static payload. The correct reading is therefore that \emph{our matched suffixes fail to strengthen the attack}, not that the defenses withstand a stronger adaptive adversary. Establishing genuine adaptive robustness would require optimization-based or search-based attackers beyond our fixed candidate set, which we leave to future work.
 
-For runtime-checking defenses, adaptive attack ASR is comparable to or lower than static: Task Shield (L1 0.10 $\to$ L2 0.00), FATH (0.00 $\to$ 0.00), IPIGuard (0.38 $\to$ 0.34). The prompt-level StruQ approximation shows a modest improvement under adaptive attack (0.70 $\to$ 0.59), suggesting the boundary-blur evasion has some effect on prompt-level channel separation---but the defense remains largely ineffective.
+Under end-to-end metrics, the input-encoding worst-case ASR (0.14--0.21) is still far below the proxy-era value (1.00). The end-to-end pipeline, not the adaptive framing, is what changes this ranking (\Cref{tab:main}).
+
+For runtime-checking defenses, the matched-suffix ASR is comparable to or below the static value: Task Shield (L1 0.10, matched 0.00), FATH (0.00, 0.00), IPIGuard (0.38, 0.34); their Robust ASR equals the larger of the two. The prompt-level StruQ approximation stays high (L1 0.70, matched 0.59; Robust 0.70), confirming that prompt-level channel separation without fine-tuning does not defend.
 
 \subsection{RQ2: Security-Utility Tradeoff and Over-Blocking}
 
-The benign (L0) condition is essential for interpreting utility loss. Without attack, the no-defense baseline completes 90\% of tasks (Utility 0.90); under attack, this drops to 19\% (Utility 0.19). This 71-percentage-point drop is \emph{attack-induced failure}, not a model capability ceiling---correcting a prior misattribution that attributed the low attack-condition utility to model weakness.
+The benign (L0) condition is essential for interpreting utility loss. Without attack, the no-defense baseline completes 90\% of tasks (Utility 0.90); under attack, this drops to 19\% (Utility 0.19). This 71-percentage-point drop is \emph{attack-induced failure}, not a model capability limitation---correcting a prior misattribution that attributed the low attack-condition utility to model weakness.
+
+We define \emph{benign over-blocking} of defense $D$ as the drop in utility it causes on benign tasks relative to no defense:
+\[
+O_D = U_{\text{no-defense},L0} - U_{D,L0},
+\]
+which isolates the defense's own utility cost from attack-induced failure. Under this definition (Table~\ref{tab:main}, L0 column):
 
 \begin{itemize}[noitemsep,topsep=0pt]
-\item \textbf{IE defenses preserve utility:} Spotlighting, Polymorphic, and Mixture-of-Encodings maintain benign utility at 0.80--0.90 (close to no-defense 0.90) and attack-condition utility at 0.67--0.73. Their genuine over-blocking (benign utility $-$ attack utility) is only 0.13--0.18, confirming they selectively suppress injections without blocking legitimate actions.
-\item \textbf{Runtime-checking defenses over-block:} Task Shield's benign utility is 0.43 (vs.\ no-defense 0.90), meaning it blocks 47\% of benign tasks even without attack. FATH (benign 0.03) and P1/P2 (benign 0.00--0.03) are even more aggressive. The gap between benign and attack utility is small (0.01--0.41), confirming these defenses block indiscriminately.
-\item \textbf{Prompt-level StruQ is ineffective but utility-preserving:} benign utility 0.83, attack utility 0.17---the large gap (0.66) is attack-induced failure (the defense doesn't prevent injection), not over-blocking.
+\item \textbf{IE defenses barely over-block:} $O_D$ is 0.00 (Polymorphic), 0.03 (Mixture-of-Encodings), and 0.10 (Spotlighting)---their benign utility (0.80--0.90) is close to the no-defense 0.90, confirming they suppress injections without blocking legitimate actions.
+\item \textbf{Runtime-checking defenses over-block heavily:} Task Shield's $O_D = 0.90 - 0.43 = 0.47$; FATH and P1/P2 have benign utility $\leq 0.03$, i.e.\ $O_D \geq 0.87$. These defenses block most benign tasks even without any attack.
+\item \textbf{Prompt-level StruQ preserves benign utility but does not defend:} $O_D = 0.90 - 0.83 = 0.07$, yet its attack-condition ASR is 0.70; its low attack-condition utility (0.17) is attack-induced failure, not over-blocking.
 \end{itemize}
+
+We report the earlier ``benign utility minus attack utility'' quantity separately as the \emph{attack-conditioned utility change}, not as over-blocking, since it conflates defense behavior with attack effects.
 
 \subsection{Main Results Table}
 
-\Cref{tab:main} reports end-to-end results for all 11 defenses across three conditions: L0 (benign), L1 (static attack), and L2 (adaptive attack). Attention Tracker and P4 are excluded due to fidelity limitations (\Cref{sec:proxy_results}).
+\Cref{tab:main} reports end-to-end results for 10 defenses plus a no-defense baseline across three conditions: L0 (benign), L1 (static payload), and L2 (defense-matched suffix). ``Robust'' is the capability-monotonic worst case $\max(\mathrm{ASR}_{L1},\mathrm{ASR}_{L2\text{-set}})$, where the L2 set always contains the L1 payload. Attention Tracker and P4 are excluded due to fidelity limitations (\Cref{sec:proxy_results}). Except for AgentDojo's official Spotlighting implementation, these figures characterize our AgentDojo reimplementations, not the original authors' systems.
 
 \begin{table*}[t]
 \centering
 \small
-\caption{Main results: 11 defenses on AgentDojo workspace (GPT-4o-mini, 3 seeds). L0 = benign (no attack, 30 trials), L1 = static \texttt{important\_instructions} (90 trials), L2 = defense-matched adaptive (90 trials). ASR from \texttt{security\_from\_traces}; Utility from \texttt{user\_task.utility}; both on real tool traces. ``Benign U'' = L0 utility (over-blocking indicator). Bold = best ASR/Utility per condition.}
+\caption{Main results on AgentDojo workspace (GPT-4o-mini, 3 seeds). L0 = benign (no attack, 30 trials); L1 = static \texttt{important\_instructions} (90 trials); L2 = defense-matched suffix (90 trials). Robust ASR $=\max(\mathrm{ASR}_{L1},\mathrm{ASR}_{L2})$ (capability-monotonic, L1 $\in$ L2 set). ASR from \texttt{security\_from\_traces}, Utility from \texttt{user\_task.utility}, on real tool traces. Marginal proportions; paired McNemar / cluster-bootstrap for L1-vs-L2 differences are in Appendix~\ref{app:stats}. Except Spotlighting (AgentDojo official), rows are our reimplementations.}
 \label{tab:main}
-\begin{tabular}{llcccccc}
+\begin{tabular}{llccccccc}
 \toprule
- & & \multicolumn{2}{c}{L0 (Benign)} & \multicolumn{2}{c}{L1 (Static)} & \multicolumn{2}{c}{L2 (Adaptive)} \\
-\cmidrule(lr){3-4} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
-Defense & Class & --- & Util$\uparrow$ & ASR$\downarrow$ & Util$\uparrow$ & ASR$\downarrow$ & Util$\uparrow$ \\
+ & & L0 & \multicolumn{2}{c}{L1 (Static)} & \multicolumn{2}{c}{L2 (Matched)} & Robust \\
+\cmidrule(lr){3-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-8}
+Defense & Class & Util$\uparrow$ & ASR$\downarrow$ & Util$\uparrow$ & ASR$\downarrow$ & Util$\uparrow$ & ASR$\downarrow$ \\
 \midrule
-No Defense & --- & --- & 0.90 & 0.74 & 0.19 & 0.70 & 0.20 \\
+No Defense & --- & 0.90 & 0.74 & 0.19 & 0.70 & 0.20 & 0.74 \\
 \midrule
-Polymorphic & IE & --- & 0.90 & 0.14 & 0.73 & \textbf{0.08} & \textbf{0.82} \\
-Mixture-of-Enc. & IE & --- & 0.87 & 0.16 & 0.69 & \textbf{0.04} & \textbf{0.86} \\
-Spotlighting & IE & --- & 0.80 & 0.21 & 0.67 & 0.06 & 0.82 \\
+Polymorphic & IE & 0.90 & 0.14 & 0.73 & 0.08 & 0.82 & 0.14 \\
+Mixture-of-Enc. & IE & 0.87 & 0.16 & 0.69 & 0.04 & 0.86 & 0.16 \\
+Spotlighting & IE & 0.80 & 0.21 & 0.67 & 0.06 & 0.82 & 0.21 \\
 \midrule
-StruQ (prompt) & SQ & --- & 0.83 & 0.70 & 0.17 & 0.59 & 0.32 \\
+StruQ (prompt) & SQ & 0.83 & 0.70 & 0.17 & 0.59 & 0.32 & 0.70 \\
 \midrule
-FATH & RC & --- & 0.03 & \textbf{0.00} & 0.02 & \textbf{0.00} & 0.06 \\
-Task Shield & RC & --- & 0.43 & 0.10 & 0.02 & \textbf{0.00} & 0.07 \\
-IPIGuard & RC & --- & 0.43 & 0.38 & 0.06 & 0.34 & 0.10 \\
+FATH & RC & 0.03 & \textbf{0.00} & 0.02 & \textbf{0.00} & 0.06 & \textbf{0.00} \\
+Task Shield & RC & 0.43 & 0.10 & 0.02 & 0.00 & 0.07 & 0.10 \\
+IPIGuard & RC & 0.43 & 0.38 & 0.06 & 0.34 & 0.10 & 0.38 \\
 \midrule
-P1: Echo Canary & RC & --- & 0.03 & 0.03 & 0.00 & 0.01 & 0.02 \\
-P2: Orthogonal & RC & --- & 0.00 & \textbf{0.00} & 0.00 & \textbf{0.00} & 0.01 \\
-P3: Task Invariant & RC & --- & 0.50 & 0.42 & 0.02 & 0.39 & 0.07 \\
+P1: Echo Canary & RC & 0.03 & 0.03 & 0.00 & 0.01 & 0.02 & 0.03 \\
+P2: Orthogonal & RC & 0.00 & \textbf{0.00} & 0.00 & \textbf{0.00} & 0.01 & \textbf{0.00} \\
+P3: Task Invariant & RC & 0.50 & 0.42 & 0.02 & 0.39 & 0.07 & 0.42 \\
 \bottomrule
 \multicolumn{8}{l}{\footnotesize IE = Input Encoding, SQ = Structured Query, RC = Runtime Checking.}
 \end{tabular}

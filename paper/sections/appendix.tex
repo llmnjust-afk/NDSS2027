@@ -2,12 +2,14 @@
 \section{Statistical Analysis}
 \label{app:stats}
 
-\Cref{tab:stats} reports per-seed ASR and Utility (mean over 3 seeds, 30 task-injection pairs per seed) with 95\% Wilson confidence intervals, computed from the native end-to-end results (990 main trials + 270 ablation trials). All values are from AgentDojo's \texttt{security\_from\_traces} (ASR) and \texttt{user\_task.utility} (Utility) evaluators on real tool-execution traces.
+\Cref{tab:stats} reports the L1 (static-payload) ASR and Utility with 95\% Wilson confidence intervals, computed from the native end-to-end results. These are \emph{marginal} proportions over 90 attempts per defense (10 user tasks $\times$ 3 injection tasks $\times$ 3 seeds).
+
+\paragraph{Paired L1-vs-L2 analysis.} Because L1 and every L2 candidate reuse the same (user task, injection task, seed) units, the L1-vs-L2 comparison is paired. We therefore do \emph{not} rely on the marginal Wilson intervals for the paired difference $\Delta=\mathrm{ASR}_{L2\text{-set}}-\mathrm{ASR}_{L1}$; instead we report an exact McNemar test on the discordant pairs and a paired bootstrap confidence interval for $\Delta$, additionally clustering the bootstrap by user task and by injection task to account for the hierarchical structure (the same task recurs across seeds, so the 90 attempts are not independent). Because the L2 candidate set contains the exact L1 payload, $\Delta\geq 0$ by construction, and the McNemar test measures whether the L2 set adds \emph{additional} successes beyond L1. The analysis code (\texttt{sok\_ipl/native/monotonic\_stats.py}) computes these quantities; for input-encoding defenses no candidate exceeds L1, so $\Delta=0$ and the worst-case Robust ASR equals the L1 value.
 
 \begin{table}[h]
 \centering
 \small
-\caption{Per-defense end-to-end results: ASR and Utility with 95\% Wilson CI (n=90 per defense, 3 seeds).}
+\caption{Per-defense L1 (static-payload) end-to-end results: ASR and Utility with 95\% Wilson CI (marginal, n=90 per defense, 3 seeds). Paired L1-vs-L2 differences are analyzed with McNemar and cluster bootstrap (see text), not these marginal intervals.}
 \label{tab:stats}
 \begin{tabular}{lcc}
 \toprule
@@ -52,7 +54,7 @@ Combined (P2) & 0.00 [0.00, 0.04] & 0.00 [0.00, 0.04] \\
 \section{Over-Blocking Diagnosis}
 \label{app:overblock}
 
-To distinguish genuine defense over-blocking from attack-induced failure, we compare Task Shield's benign (L0) and attack-condition (L1) utility with the no-defense baseline. Without attack, no-defense completes 90\% of tasks (benign Utility 0.90); under attack, this drops to 19\% (attack-condition Utility 0.19). This 71-percentage-point drop is attack-induced failure, not model capability limitation. Task Shield's benign utility is 0.43---meaning it blocks 47\% of benign tasks even without attack (genuine over-blocking). Its attack-condition utility is 0.02, only slightly below benign, confirming the defense blocks indiscriminately rather than selectively. The key insight is that the L0 baseline is essential: without it, one might attribute Task Shield's low attack-condition utility to the model, but the benign comparison shows the defense itself is responsible for most of the utility loss.
+To distinguish genuine defense over-blocking from attack-induced failure, we compare Task Shield's benign (L0) and attack-condition (L1) utility with the no-defense baseline. Without attack, no-defense completes 90\% of tasks (benign Utility 0.90); under attack, this drops to 19\% (attack-condition Utility 0.19). This 71-percentage-point drop is attack-induced failure, not model capability limitation. Task Shield's benign over-blocking is $O_D = 0.90 - 0.43 = 0.47$: it blocks 47\% of benign tasks even without any attack. Its attack-condition utility (0.02) is a further 0.41 below its benign utility (0.43); this additional drop reflects the joint effect of the attack and the defense. The key insight is that the L0 baseline is essential: without it, one might attribute Task Shield's low attack-condition utility to the model, but the benign comparison shows the defense itself over-blocks nearly half of all benign tasks.
 
 \section{Omitted Prior Experiments}
 \label{app:omitted}
@@ -62,4 +64,14 @@ The prior version of this paper (proxy-based evaluation) included backbone compa
 \section{Native Evaluation Pipeline}
 \label{app:native}
 
-Our evaluation uses AgentDojo v1.2.2's native benchmark infrastructure. Each defense is implemented as a \texttt{BasePipelineElement} that integrates into AgentDojo's \texttt{AgentPipeline} and \texttt{ToolsExecutionLoop}. The agent executes real tools (e.g., \texttt{send\_email}, \texttt{get\_calendar\_events}), producing real function-call traces and environment state changes. Security is scored by \texttt{injection\_task.security\_from\_traces(traces, pre\_env, post\_env)} and utility by \texttt{user\_task.utility(model\_output, pre\_env, post\_env)}. This eliminates the string-matching proxy used in prior work. All code is in \texttt{sok\_ipl/native/pipeline\_builder.py} and \texttt{scripts/run\_native\_benchmark.py}.
+Our evaluation uses AgentDojo v1.2.2's native benchmark infrastructure. Each defense is implemented as a \texttt{BasePipelineElement} that integrates into AgentDojo's \texttt{AgentPipeline} and \texttt{ToolsExecutionLoop}. The agent executes real tools (e.g., \texttt{send\_email}, \texttt{get\_calendar\_events}), producing real function-call traces and environment state changes. Security is scored by \texttt{injection\_task.security\_from\_traces(traces, pre\_env, post\_env)} and utility by \texttt{user\_task.utility(model\_output, pre\_env, post\_env)}. This eliminates the string-matching proxy used in prior work. All code is in \texttt{sok\_ipl/native/pipeline\_builder.py} and \texttt{scripts/run\_bestofk.py}.
+
+\paragraph{Capability-monotonic L2 candidate set.} For each unit $u=(\text{defense}, \text{seed}, \text{user task}, \text{injection task})$ we build a candidate set
+\[
+\mathcal{A}_{L2}(u)=\{a_{L1}, a_{\text{matched}}, a_{\text{generic}}, a_{\text{control}}, a_{\text{para},0},\dots,a_{\text{para},k-1}\},
+\]
+where $a_{L1}$ is the exact AgentDojo \texttt{important\_instructions} payload (verified byte-for-byte), each other candidate is $a_{L1}$ with an additive suffix inserted at a single fixed boundary after the goal (so the malicious goal is preserved verbatim), $a_{\text{generic}}$ is a target-independent authority suffix, and $a_{\text{control}}$ is a semantically-inert filler suffix matched in character length to $a_{\text{matched}}$ and derived deterministically by SHA-256 (isolating content effects from length). The per-unit outcome is $\mathrm{success}(u)=\bigvee_{a\in\mathcal{A}_{L2}(u)} \mathrm{security\_from\_traces}(a)$, and
+\[
+\text{Robust ASR}=\operatorname*{mean}_u \max_{a\in\mathcal{A}_{L2}(u)} \mathrm{ASR}(a) \;\geq\; \mathrm{ASR}_{L1},
+\]
+since $a_{L1}\in\mathcal{A}_{L2}(u)$. The FATH matched candidate embeds the real $\mathrm{SHA\text{-}256}(\text{user task})[{:}8]$ token; the P2 matched candidate attacks both the canary and the alignment check. The runner (\texttt{scripts/run\_bestofk.py}) writes one attempt record per candidate and \texttt{sok\_ipl/native/monotonic\_stats.py} computes best-of-$k$, McNemar, and cluster bootstrap, asserting $\mathrm{l1\_success}\Rightarrow\mathrm{l2\_set\_success}$ for every unit.

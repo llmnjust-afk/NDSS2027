@@ -20,7 +20,7 @@ We adopt the threat model standard in the IPI literature. The adversary:
 \begin{itemize}[noitemsep,topsep=0pt]
 \item Controls the content of at least one tool output $t_i \in T$ (e.g., by sending a malicious email, publishing a malicious web page, or compromising a tool provider).
 \item Knows the defense class employed by the agent (e.g., input encoding, structured query) but not the defense's secret parameters (e.g., the specific delimiter used, the randomization seed).
-\item Can observe the agent's responses to previous injections (for multi-turn adaptive attacks) but cannot observe the system prompt directly.
+\item Knows the defense \emph{class} (IE, SQ, RC) but not its secret parameters (exact delimiter, randomization seed, canary), and cannot observe the system prompt directly. Multi-turn interactive optimization is outside our evaluated threat model.
 \item Aims to achieve a specific malicious goal $g$ (e.g., exfiltrating data, sending emails to attacker addresses) while remaining undetected.
 \end{itemize}
 
@@ -33,7 +33,7 @@ The defender:
 
 \subsection{Adaptive vs.\ Static Attacks}
 
-A \emph{static} IPI attack uses a fixed payload template drawn from a predefined pool, without knowledge of the defense. An \emph{adaptive} attack tailors the payload to the specific defense's detection signal. For example, if the defense wraps untrusted content in \texttt{<data>} delimiters, the adaptive attacker includes matching \texttt{<data>} tags within the injection to blur the trusted/untrusted boundary. Zhan et al.~\cite{zhan2025adaptive} showed that adaptive attacks raise ASR from below 10\% to over 60\% for three defenses; our work extends this to 13 defenses and systematizes the failure modes.
+A \emph{static} IPI attack uses a fixed payload template drawn from a predefined pool, without knowledge of the defense. An \emph{adaptive} attack tailors the payload to the specific defense's detection signal. For example, if the defense wraps untrusted content in \texttt{<data>} delimiters, the adaptive attacker includes matching \texttt{<data>} tags within the injection to blur the trusted/untrusted boundary. Zhan et al.~\cite{zhan2025adaptive} showed that adaptive attacks raise ASR from below 10\% to over 60\% for three defenses; our work extends end-to-end evaluation to 10 defenses plus a no-defense baseline and reports capability-monotonic worst-case (best-of-$k$) ASR.
 
 \subsection{Attack Levels}
 
