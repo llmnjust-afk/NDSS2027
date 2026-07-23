@@ -37,12 +37,12 @@ The defense restructures the agent system to limit the blast radius of a hijacke
 
 \subsection{Taxonomy Summary}
 
-\Cref{tab:taxonomy} maps the 12 defenses in our evaluation to their (layer, trust) coordinates. We evaluate 8 baselines from the literature plus 4 design-principle prototypes (P1--P4, \Cref{sec:principles}), totaling 12 defense configurations. SecAlign is classified in the taxonomy but not evaluated (see \Cref{sec:limitations}). The key observation is that all IE and IP defenses rely on a \emph{single observable signal}---the delimiter, encoding, or attention pattern---that the attacker can observe and mimic. This structural property is what the single-signal fragility conjecture (\Cref{sec:principles}) formalizes.
+\Cref{tab:taxonomy} maps the 11 defenses in our evaluation to their (layer, trust) coordinates. We evaluate 7 baselines from the literature plus 3 design-principle prototypes (P1--P3, \Cref{sec:principles}), plus a no-defense baseline. Attention Tracker (IP) and P4 (AR) are excluded from quantitative evaluation due to fidelity limitations (\Cref{sec:proxy_results}). SecAlign is classified but not evaluated (requires fine-tuning, see \Cref{sec:limitations}). The key observation is that IE defenses rely on a \emph{single observable signal}---the delimiter or encoding boundary---that the attacker can observe and potentially mimic.
 
 \begin{table}[t]
 \centering
 \small
-\caption{Defense taxonomy: 12 evaluated defenses + SecAlign (not evaluated) mapped to (layer, trust).}
+\caption{Defense taxonomy: 11 evaluated defenses mapped to (layer, trust). Attention Tracker and P4 excluded (see \Cref{sec:proxy_results}).}
 \label{tab:taxonomy}
 \begin{tabular}{lll}
 \toprule
@@ -56,11 +56,9 @@ SecAlign~\cite{chen2024secalign} (not eval.) & SQ & Prompt-level \\
 Task Shield~\cite{jia2025task} & RC & Prompt-level \\
 IPIGuard~\cite{an2025ipiguard} & RC & Prompt-level \\
 FATH~\cite{wang2024fath} & RC & Formal \\
-Attention Tracker~\cite{hung2025attention} (proxy) & IP & Prompt-level \\
 P1: Echo Canary & RC & Prompt-level \\
 P2: Orthogonal & RC & Prompt-level \\
 P3: Task Invariant & RC & Prompt-level \\
-P4: Least Privilege & AR & TEE \\
 \bottomrule
 \end{tabular}
 \end{table}
