@@ -2,132 +2,64 @@
 \section{Statistical Analysis}
 \label{app:stats}
 
-\Cref{tab:stats} reports per-seed ASR (mean$\pm$std over 5 seeds for 6 key defenses, 3 seeds for others), Cohen's $d$ effect size relative to the no-defense baseline, 95\% bootstrap confidence intervals, and Wilcoxon signed-rank $p$-values (where $n \geq 5$). Cohen's $d$ values displayed as ``---'' indicate degenerate cases where both the defense and baseline have zero variance (e.g., both always 0 or both always 1), making the effect size undefined.
+\Cref{tab:stats} reports per-seed ASR and Utility (mean over 3 seeds, 30 task-injection pairs per seed) with 95\% Wilson confidence intervals, computed from the native end-to-end results (990 main trials + 270 ablation trials). All values are from AgentDojo's \texttt{security\_from\_traces} (ASR) and \texttt{user\_task.utility} (Utility) evaluators on real tool-execution traces.
 
 \begin{table}[h]
 \centering
 \small
-\caption{Statistical analysis: ASR (mean$\pm$std), Cohen's $d$ vs.\ no-defense, 95\% bootstrap CI. ``---'' = undefined (zero variance in both samples).}
+\caption{Per-defense end-to-end results: ASR and Utility with 95\% Wilson CI (n=90 per defense, 3 seeds).}
 \label{tab:stats}
-\begin{tabular}{llrrrl}
-\toprule
-Defense & Lv & ASR & $d$ & $p$ (Wilcoxon) & 95\% CI \\
-\midrule
-Spotlighting & L1 & 0.75$\pm$0.43 & $-$0.52 & 0.0625 & [0.25, 1.00] \\
-Spotlighting & L2 & 1.00$\pm$0.00 & --- & --- & [1.00, 1.00] \\
-StruQ & L1 & 0.02$\pm$0.03 & $-$8.65 & 0.0625 & [0.00, 0.03] \\
-StruQ & L2 & 0.10$\pm$0.00 & --- & --- & [0.10, 0.10] \\
-Task Shield & L1 & 0.02$\pm$0.03 & $-$8.65 & 0.0625 & [0.00, 0.05] \\
-Task Shield & L2 & 0.00$\pm$0.00 & --- & --- & [0.00, 0.00] \\
-Attention Tracker & L1 & 0.87$\pm$0.23 & $-$0.26 & 0.1250 & [0.60, 1.00] \\
-Attention Tracker & L2 & 1.00$\pm$0.00 & --- & --- & [1.00, 1.00] \\
-P1 (Unobservable) & L1 & 0.78$\pm$0.20 & $-$0.76 & 0.0625 & [0.55, 0.90] \\
-P1 (Unobservable) & L2 & 0.90$\pm$0.13 & $-$1.07 & 0.0625 & [0.75, 0.98] \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Design-Principle Ablation}
-\label{app:ablation}
-
-\Cref{tab:ablation} summarizes the four design-principle prototypes. ``Defeated'' means R-ASR $> 0.5$ (the adaptive attack succeeds on the majority of tasks); ``Over-blocks'' means FPR $> 0.5$ (the defense blocks the majority of benign actions). No principle achieves both R-ASR $< 0.5$ and FPR $< 0.5$, confirming the fundamental security-utility tradeoff discussed in \Cref{conj:single}.
-
-\begin{table}[h]
-\centering
-\small
-\caption{Design-principle ablation: R-ASR, FPR, USR, and verdict.}
-\label{tab:ablation}
-\begin{tabular}{lcccl}
-\toprule
-Principle & R-ASR$\downarrow$ & FPR$\downarrow$ & USR$\uparrow$ & Verdict \\
-\midrule
-P1: Unobservable Signal & 0.90 & 0.05 & 0.95 & Defeated \\
-P2: Orthogonal Signals & 0.00 & 0.57 & 0.43 & Over-blocks \\
-P3: Task Invariant (relaxed) & 0.00 & 1.00 & 0.00 & Over-blocks \\
-P4: Least Privilege & 1.00 & 0.00 & 1.00 & Defeated \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-P1 demonstrates that a single unobservable signal (a random canary) is insufficient: the canary leaks into the agent's output and is extracted by the multi-turn adaptive attacker (L3), then forged in subsequent injections. P2 combines P1's canary with task-alignment checking; the conjunction resists (R-ASR 0.00) because forging the canary is information-theoretically impossible, but the 57\% FPR shows that the conjunction over-blocks. P3's relaxed state machine (top-$k$ allowed transitions) still blocks everything including the legitimate task (FPR 1.00), because the AgentDojo workspace tasks involve multi-step reasoning that the top-$k$ heuristic cannot capture. P4's sandbox does not detect injections, only limits blast radius, so an injection that uses an allowed resource maliciously still succeeds (R-ASR 1.00).
-
-\section{Backbone Comparison}
-\label{app:backbone}
-
-Our main evaluation uses GPT-4o-mini. To assess backbone sensitivity, we re-run a reduced matrix (6 key defenses $\times$ 5 levels $\times$ 2 seeds $\times$ 15 tasks) with GPT-4o. \Cref{tab:backbone} compares R-ASR between the two backbones.
-
-\begin{table}[h]
-\centering
-\small
-\caption{Backbone comparison: R-ASR for 6 key defenses.}
-\label{tab:backbone}
 \begin{tabular}{lcc}
 \toprule
-Defense & GPT-4o-mini & GPT-4o \\
+Defense & ASR [95\% CI] & Utility [95\% CI] \\
 \midrule
-No Defense & 1.00 & 1.00 \\
-Spotlighting & 1.00 & 0.13 \\
-StruQ & 0.10 & 0.00 \\
-Task Shield & 0.00 & 0.00 \\
-Attention Tracker & 1.00 & 1.00 \\
-P1 (Unobservable) & 0.90 & 1.00 \\
+No Defense & 0.74 [0.65, 0.82] & 0.19 [0.12, 0.28] \\
+Polymorphic & 0.14 [0.09, 0.23] & 0.73 [0.63, 0.81] \\
+Mixture-of-Enc. & 0.16 [0.10, 0.24] & 0.69 [0.59, 0.78] \\
+Spotlighting & 0.21 [0.14, 0.31] & 0.67 [0.57, 0.76] \\
+StruQ (prompt) & 0.70 [0.60, 0.78] & 0.17 [0.10, 0.27] \\
+FATH & 0.00 [0.00, 0.04] & 0.02 [0.00, 0.07] \\
+Task Shield & 0.10 [0.05, 0.18] & 0.02 [0.00, 0.07] \\
+IPIGuard & 0.38 [0.28, 0.48] & 0.06 [0.02, 0.13] \\
+P1: Echo Canary & 0.03 [0.01, 0.09] & 0.00 [0.00, 0.04] \\
+P2: Orthogonal & 0.00 [0.00, 0.04] & 0.00 [0.00, 0.04] \\
+P3: Task Invariant & 0.42 [0.32, 0.52] & 0.02 [0.00, 0.07] \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The most notable difference is Spotlighting: it is defeated on GPT-4o-mini (R-ASR 1.00) but resists on GPT-4o (R-ASR 0.13). This is because GPT-4o more reliably obeys the delimiter instruction (``text inside data delimiters is untrusted''), making the signal-alignment evasion less effective. This backbone sensitivity is itself a finding: the robustness of input-encoding defenses depends on the backbone's instruction-following fidelity, not just the defense's design---a property consistent with the single-signal fragility conjecture (the delimiter is still an observable signal; a stronger model simply assigns it more authority, which is an empirical property not captured by the conjecture's assumptions). Attention Tracker is defeated on both backbones (R-ASR 1.00), confirming that internal-probing defenses are backbone-independent in their failure.
+\section{P2 Ablation Detail}
+\label{app:p2_ablation}
 
-\section{Adaptive Attack Strength}
-\label{app:adaptive_strength}
-
-Our main evaluation uses \texttt{max\_iters=2} for the LLM-in-the-loop adaptive optimizer. To assess sensitivity to optimizer budget, we re-run L2/L3 with \texttt{max\_iters=5} (the setting used by Zhan et al.). \Cref{tab:adaptive_strength} shows that increasing the optimizer budget from 2 to 5 iterations does not meaningfully change ASR for the defenses that are already defeated (at 1.00) or resisting (at 0.00--0.10), indicating that 2 iterations suffice for the adaptive attack to find an effective payload.
+\Cref{tab:p2_ablation_app} details the P2 ablation (90 trials per configuration, same tasks/attacks/seeds as the main experiment). The canary provides independent security value (ASR 0.03 alone vs.\ 0.74 baseline), but all configurations sacrifice Utility entirely.
 
 \begin{table}[h]
 \centering
 \small
-\caption{Adaptive attack strength: ASR at L2 with max\_iters=2 vs.\ 5 (GPT-4o-mini).}
-\label{tab:adaptive_strength}
+\caption{P2 ablation: canary vs.\ alignment contributions (n=90 each).}
+\label{tab:p2_ablation_app}
 \begin{tabular}{lcc}
 \toprule
-Defense & max\_iters=2 & max\_iters=5 \\
+Configuration & ASR [95\% CI] & Utility [95\% CI] \\
 \midrule
-Spotlighting & 1.00 & 1.00 \\
-StruQ & 0.10 & 0.10 \\
-Attention Tracker & 1.00 & 1.00 \\
-P1 (Unobservable) & 0.90 & 0.98 \\
+Canary only & 0.03 [0.01, 0.09] & 0.00 [0.00, 0.04] \\
+Alignment only & 0.09 [0.05, 0.17] & 0.04 [0.02, 0.11] \\
+Combined (P2) & 0.00 [0.00, 0.04] & 0.00 [0.00, 0.04] \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-P1 shows a slight increase (0.90$\to$0.98), indicating that the canary-extraction attack benefits from more optimizer iterations, but the qualitative verdict (``defeated'') is unchanged. This confirms that 2 iterations suffice for the adaptive attack to find an effective payload, consistent with the single-signal fragility conjecture.
+\section{Over-Blocking Diagnosis}
+\label{app:overblock}
 
-\section{SecAlign Evaluation}
-\label{app:sealign}
+To distinguish genuine defense over-blocking from base-model capability ceiling, we compare Task Shield to the no-defense baseline on identical (seed, user\_task, injection\_task) triples. Of 90 triples: the baseline completes 13 (Utility=1); Task Shield blocks all 13 of these (genuine over-blocking = 14.4\%). Both fail on 72 triples (model weakness = 80.0\%). Task Shield completes 5 triples the baseline fails (5.6\%). This analysis shows that the low Utility of runtime-checking defenses is dominated by the base model's capability ceiling, not by defense over-blocking---but genuine over-blocking does exist (14.4\% of completable tasks blocked).
 
-We evaluate SecAlign~\cite{chen2024secalign} using the officially released LoRA adapter for Mistral-7B-Instruct-v0.1, loaded via PEFT on a single A100 GPU. We test 15 AgentDojo workspace tasks at L0--L3 with 1 seed. Results: SecAlign R-ASR = 0.00, but the no-defense baseline on the same backbone also achieves R-ASR = 0.00 (L1 ASR = 0.00). This means Mistral-7B-Instruct-v0.1 itself is naturally resistant to the \texttt{<INFORMATION>} injection template, making it impossible to distinguish SecAlign's contribution from the backbone's inherent resistance. This is a backbone-sensitivity finding: weaker instruction-following models may resist IPI not because of stronger defenses but because they do not faithfully follow injected instructions. Evaluating SecAlign on a susceptible backbone (e.g., GPT-4o-mini) would require a compatible SecAlign adapter, which is currently only available for Llama-3-8B-Instruct (a gated model). We note this as a limitation.
+\section{Omitted Prior Experiments}
+\label{app:omitted}
 
-\section{Open-Source Backbone: Qwen2.5-7B-Instruct}
-\label{app:qwen}
+The prior version of this paper (proxy-based evaluation) included backbone comparisons (GPT-4o, Qwen2.5-7B), cross-benchmark validation (InjecAgent), adaptive-attack-strength sweeps, and SecAlign evaluation. These were conducted under the string-matching proxy methodology and produced results that \emph{contradict} our native end-to-end findings (e.g., proxy reported Spotlighting R-ASR=1.00; native shows ASR=0.21). We have therefore \emph{removed} these proxy-based results from this revision rather than report numbers we cannot support with end-to-end evidence. We plan to re-run backbone, cross-benchmark, and SecAlign evaluations using the native pipeline in future work.
 
-To verify the structural finding on an open-source model, we run 6 key defenses $\times$ 4 attack levels (L0--L3) $\times$ 2 seeds $\times$ 15 tasks (840 trials) on Qwen2.5-7B-Instruct, served locally on an A100 80GB GPU.
+\section{Native Evaluation Pipeline}
+\label{app:native}
 
-\begin{table}[h]
-\centering
-\small
-\caption{Qwen2.5-7B-Instruct results: R-ASR for 6 key defenses.}
-\label{tab:qwen}
-\begin{tabular}{lcc}
-\toprule
-Defense & GPT-4o-mini R-ASR & Qwen2.5-7B R-ASR \\
-\midrule
-No Defense & 1.00 & 1.00 \\
-Spotlighting & 1.00 & 1.00 \\
-StruQ & 0.10 & 0.67 \\
-Task Shield & 0.00 & 1.00 \\
-Attention Tracker & 1.00 & 1.00 \\
-P1 (Unobservable) & 0.90 & 0.97 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-On Qwen2.5-7B, all single-signal defenses are defeated (R-ASR $\geq$ 0.97), confirming the structural finding on an open-source model. Notably, Task Shield (RC) fails on Qwen (R-ASR 1.00) while it resists on GPT-4o-mini (R-ASR 0.00), because Qwen's weaker instruction-following causes the alignment score to be unreliable. StruQ (SQ) also fails more severely (R-ASR 0.67 vs.\ 0.10), suggesting its structured-query boundary is less effective on models with lower instruction hierarchy compliance. These results confirm the fragility conjecture's prediction that single-signal defenses fail regardless of backbone, while highlighting that the \emph{degree} of failure is backbone-dependent.
+Our evaluation uses AgentDojo v1.2.2's native benchmark infrastructure. Each defense is implemented as a \texttt{BasePipelineElement} that integrates into AgentDojo's \texttt{AgentPipeline} and \texttt{ToolsExecutionLoop}. The agent executes real tools (e.g., \texttt{send\_email}, \texttt{get\_calendar\_events}), producing real function-call traces and environment state changes. Security is scored by \texttt{injection\_task.security\_from\_traces(traces, pre\_env, post\_env)} and utility by \texttt{user\_task.utility(model\_output, pre\_env, post\_env)}. This eliminates the string-matching proxy used in prior work. All code is in \texttt{sok\_ipl/native/pipeline\_builder.py} and \texttt{scripts/run\_native\_benchmark.py}.
