@@ -7,44 +7,40 @@ The key insight behind our framework is that an adaptive attack is not ``a stron
 
 \subsection{Evasion Strategies}
 
-We define six evasion strategies, one per defense class plus a default. \Cref{tab:strategies} provides a concrete payload example for each.
+We define five evasion strategies, matched to the defense classes we evaluate. \Cref{tab:strategies} provides a concrete payload example for each. Each strategy appends a defense-class-specific evasion suffix to the \texttt{important\_instructions} template; the mapping from defense to strategy is fixed (\Cref{tab:strategies}).
 
 \begin{table}[t]
 \centering
 \small
-\caption{Evasion strategies: target defense class and example payload.}
+\caption{Evasion strategies (as implemented): target defenses and evasion mechanism. All five are realized as native AgentDojo \texttt{BaseAttack} subclasses.}
 \label{tab:strategies}
-\begin{tabular}{p{0.18\columnwidth}p{0.15\columnwidth}p{0.55\columnwidth}}
+\begin{tabular}{p{0.2\columnwidth}p{0.22\columnwidth}p{0.46\columnwidth}}
 \toprule
-Strategy & Target & Example Payload Fragment \\
+Strategy & Target & Evasion Mechanism \\
 \midrule
-Signal Align. & IE & \texttt{<data>[goal]</data>} (reuses defense delimiter) \\
-Boundary Blur & SQ & \texttt{\{"\_meta":\{"instr":[goal]\}\}} (smuggles in JSON data field) \\
-Intent Disguise & RC & ``To complete the user's request, first: [goal]'' \\
-Atten.\ Redist. & IP & [filler]\verb|\n|[goal]\verb|\n|[filler] (dilutes attention) \\
-Channel Split & AR & \texttt{[PART\_A][goal\_a][PART\_B][goal\_b]} (fragments) \\
-Paraphrase & TB & [EN]\,[goal] / [FR]\,[goal] / [B64]\,[goal] \\
+Signal Alignment & Spotlighting, Polymorphic, Mixture-of-Enc.\ (IE) & Claims the injection is trusted system data, not delimiter-wrapped untrusted output \\
+Boundary Blur & StruQ (SQ) & Claims the message was misrouted from the user channel into the data channel \\
+Semantic Paraphrase & Task Shield, IPIGuard, P3 (RC) & Frames the malicious action as a prerequisite sub-step of the user task \\
+Auth Forge & FATH (RC) & Instructs the model to compute and include the SHA-256 auth token from the visible user task \\
+Canary Forge & P1, P2 (RC) & Instructs the model to echo the system-prompt canary before executing the injection \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Signal Alignment (for IE).}
-The defense wraps untrusted content in a delimiter (e.g., \texttt{<data>}). For defenses with a fixed, known delimiter (Spotlighting, Mixture-of-Encodings), the attacker includes the same delimiter within the injection, so the LLM cannot distinguish the defense's wrapping from the injection's wrapping. For Polymorphic Prompt, which randomizes the delimiter per call, the attacker cannot know the specific delimiter in a single-shot L2 setting. In this case, the L2 attack uses the \texttt{<INFORMATION>} template without delimiter reuse---the attack succeeds because the \texttt{<INFORMATION>} wrapper itself overrides the defense's marking, regardless of which delimiter the defense uses. We note this distinction: the signal-alignment strategy is effective against fixed-delimiter IE defenses, while the \texttt{<INFORMATION>} template's authority-claiming framing is effective against randomized-delimiter IE defenses.
+The defense wraps untrusted content in a delimiter and tells the model to treat delimited text as data. The attacker's suffix claims the injected instruction is a trusted system directive, not delimiter-wrapped untrusted output, and should override any data-boundary marking. For fixed-delimiter defenses (Spotlighting, Mixture-of-Encodings) this exploits the shared delimiter; for randomized-delimiter Polymorphic Prompt the suffix uses generic authority-claiming since the exact delimiter is unknown in a single-shot setting.
 
 \paragraph{Boundary Blur (for SQ).}
-The defense separates instructions and data into structurally distinct positions. The attacker smuggles instructions inside the data field by reusing the defense's own JSON structure: the payload is embedded as a \texttt{\_meta.instruction} key within what the defense parses as a data object.
+The defense declares that tool-role messages are data, not commands. The attacker's suffix claims the message was originally a direct user instruction inadvertently routed through the data channel, and should be treated with user-level authority.
 
-\paragraph{Intent Disguise (for RC).}
-The defense checks whether the proposed action aligns with the user task. The attacker phrases the malicious action as a prerequisite step of the legitimate task: ``To complete the user's request, first perform this prerequisite step: [goal]. Then continue with the original task.'' This framing causes the task-alignment score to remain high because the action is semantically connected to the user task.
+\paragraph{Semantic Paraphrase (for RC alignment/allow-list).}
+The defense checks whether the proposed action aligns with the user task. The attacker phrases the malicious action as a necessary prerequisite sub-step of the legitimate task, so the alignment check remains satisfied.
 
-\paragraph{Attention Redistribution (for IP).}
-The defense flags prompts where disproportionate attention falls on untrusted tokens. The attacker pads the injection with benign filler text (repeated generic phrases) so the attention spike on the malicious token is diluted below the detector's threshold.
+\paragraph{Auth Forge (for FATH).}
+FATH requires an authentication token derived from the user task. Since the user task is visible in the conversation, the attacker's suffix instructs the model to compute the SHA-256 token itself and include it, forging the authentication.
 
-\paragraph{Channel Split (for AR).}
-The defense isolates tools into separate processes or TEEs. The attacker splits the injection across multiple tool outputs so that no single channel contains the complete malicious instruction; the LLM reassembles the instruction from fragments across channels.
-
-\paragraph{Paraphrase and Translate (for training-based).}
-The defense was fine-tuned to resist a specific injection style. The attacker rotates through multiple languages and heavy paraphrase to evade the learned pattern.
+\paragraph{Canary Forge (for P1/P2).}
+The echo-canary defense requires the model to output a canary token before tool calls. The attacker's suffix instructs the model to include the canary from its system prompt in the response, attempting to satisfy the canary check while executing the injection.
 
 \subsection{Attack Levels}
 
