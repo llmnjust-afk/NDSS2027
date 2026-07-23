@@ -33,58 +33,56 @@ We report both ASR and Utility because a defense that blocks everything achieves
 \paragraph{Scale.}
 The main experiment comprises 11 defenses $\times$ 1 attack (important\_instructions) $\times$ 10 user tasks $\times$ 3 injection tasks $\times$ 3 seeds = 990 trials, all using AgentDojo's native end-to-end pipeline. The P2 ablation (3 configurations $\times$ 90 = 270 trials) disentangles canary vs.\ alignment contributions. Total: 1{,}260 trials, 0 errors. Total API cost was approximately \$60--80 USD.
 
-\subsection{RQ1: Defense Performance Under Static IPI}
+\subsection{RQ1: Static vs.\ Adaptive Attack (L1 vs.\ L2)}
 
-\Cref{tab:main} reports end-to-end ASR and Utility for all 11 defenses under the \texttt{important\_instructions} attack, measured by AgentDojo's native trace-based evaluators. The no-defense baseline has ASR 0.74 [0.65, 0.82] and Utility 0.19 [0.12, 0.28], confirming that GPT-4o-mini is susceptible to injection but also that it completes only $\sim$19\% of tasks even without a defense---a baseline capability ceiling that is critical for interpreting over-blocking claims (a defense with Utility $\approx$ 0.19 is not necessarily over-blocking; it may reflect the model's own limitation).
+\Cref{tab:main} reports end-to-end results for all 11 defenses under three conditions: L0 (benign, no attack), L1 (static \texttt{important\_instructions} attack), and L2 (defense-class-matched adaptive attack). ASR and Utility are computed by AgentDojo's native evaluators on real tool-execution traces.
 
-Input-encoding defenses are the strongest performers: Polymorphic (ASR 0.14, Utility 0.73), Mixture-of-Encodings (ASR 0.16, Utility 0.69), and Spotlighting (ASR 0.21, Utility 0.67) all substantially reduce ASR while \emph{preserving} Utility above the no-defense baseline. This means these defenses do not merely block everything---they selectively neutralize injected instructions while allowing legitimate task completion. Runtime-checking defenses (Task Shield ASR 0.10, FATH ASR 0.00, P2 ASR 0.00) achieve lower ASR but at the cost of Utility $\leq$ 0.02, indicating aggressive over-blocking. The prompt-level StruQ approximation (ASR 0.70) provides little protection, confirming that structured-query separation requires fine-tuning to be effective---prompt-level instructions to ``treat tool output as data'' are insufficient.
+The most striking finding is that \emph{adaptive attacks do not defeat input-encoding defenses---they are weaker than static attacks}. Under L1, IE defenses achieve ASR 0.14--0.21; under L2 (matched signal-alignment evasion), ASR \emph{drops} to 0.04--0.08. The adaptive evasion suffix, which attempts to claim the injection is trusted system data, appears to dilute the injection's instruction-following strength more than it evades the delimiter boundary. This directly contradicts the proxy-based prediction (proxy ASR was 1.00 for all IE defenses under L2), demonstrating that proxy metrics can reverse the qualitative conclusion.
 
-\subsection{RQ2: Security-Utility Tradeoff}
+For runtime-checking defenses, adaptive attack ASR is comparable to or lower than static: Task Shield (L1 0.10 $\to$ L2 0.00), FATH (0.00 $\to$ 0.00), IPIGuard (0.38 $\to$ 0.34). The prompt-level StruQ approximation shows a modest improvement under adaptive attack (0.70 $\to$ 0.59), suggesting the boundary-blur evasion has some effect on prompt-level channel separation---but the defense remains largely ineffective.
 
-The central finding from end-to-end evaluation is a sharp security-utility tradeoff: defenses that achieve low ASR tend to also destroy Utility, while defenses that preserve Utility have moderate ASR. \Cref{tab:main} visualizes this---no defense reaches the ideal zone (low ASR \emph{and} high Utility).
+\subsection{RQ2: Security-Utility Tradeoff and Over-Blocking}
+
+The benign (L0) condition is essential for interpreting utility loss. Without attack, the no-defense baseline completes 90\% of tasks (Utility 0.90); under attack, this drops to 19\% (Utility 0.19). This 71-percentage-point drop is \emph{attack-induced failure}, not a model capability ceiling---correcting a prior misattribution that attributed the low attack-condition utility to model weakness.
 
 \begin{itemize}[noitemsep,topsep=0pt]
-\item \textbf{Input encoding is the best tradeoff:} Polymorphic, Mixture-of-Encodings, and Spotlighting cluster in the favorable region (ASR 0.14--0.21, Utility 0.67--0.73). They reduce ASR by 71--81\% relative to baseline while \emph{increasing} Utility above the no-defense ceiling (0.19), indicating they suppress injected instructions without blocking legitimate actions.
-\item \textbf{Runtime checking over-blocks:} Task Shield (ASR 0.10, Utility 0.02), FATH (ASR 0.00, Utility 0.02), P1 (ASR 0.03, Utility 0.00), and P2 (ASR 0.00, Utility 0.00) achieve near-zero ASR but Utility $\leq$ 0.02. However, we must distinguish \emph{genuine over-blocking} from \emph{model-weakness}: comparing Task Shield to the no-defense baseline on identical tasks, Task Shield blocks 14.4\% of tasks that the baseline completes, while 80\% of Task Shield's Utility=0 cases are tasks the baseline \emph{also} fails---attributable to GPT-4o-mini's capability ceiling, not the defense.
-\item \textbf{Prompt-level structured query is insufficient:} \texttt{struq\_prompt} achieves ASR 0.70 (only 5\% relative reduction vs.\ baseline), confirming that prompt-level channel separation without fine-tuning does not resist injection. The original fine-tuned StruQ~\cite{chen2024struq} would likely perform better; our result bounds the \emph{prompt-only} approach.
-\item \textbf{Tool-allow-list defenses are moderate:} IPIGuard (ASR 0.38, Utility 0.06) and P3 (ASR 0.42, Utility 0.02) block some attacks via static tool allow-lists but still sacrifice Utility and miss a substantial fraction of injections.
+\item \textbf{IE defenses preserve utility:} Spotlighting, Polymorphic, and Mixture-of-Encodings maintain benign utility at 0.80--0.90 (close to no-defense 0.90) and attack-condition utility at 0.67--0.73. Their genuine over-blocking (benign utility $-$ attack utility) is only 0.13--0.18, confirming they selectively suppress injections without blocking legitimate actions.
+\item \textbf{Runtime-checking defenses over-block:} Task Shield's benign utility is 0.43 (vs.\ no-defense 0.90), meaning it blocks 47\% of benign tasks even without attack. FATH (benign 0.03) and P1/P2 (benign 0.00--0.03) are even more aggressive. The gap between benign and attack utility is small (0.01--0.41), confirming these defenses block indiscriminately.
+\item \textbf{Prompt-level StruQ is ineffective but utility-preserving:} benign utility 0.83, attack utility 0.17---the large gap (0.66) is attack-induced failure (the defense doesn't prevent injection), not over-blocking.
 \end{itemize}
-
-\subsection{Base Model Capability Ceiling}
-\label{sec:backbone_main}
-
-A critical observation is that GPT-4o-mini's Utility on AgentDojo workspace tasks is only 0.19---80\% of tasks are not completed even without a defense. This capability ceiling is essential for interpreting over-blocking claims: a defense with Utility $\approx$ 0.02 is not necessarily over-blocking 98\% of tasks; much of this reflects the model's own inability to complete the tasks. By comparing Task Shield to the no-defense baseline on identical (seed, user\_task, injection\_task) triples, we find that Task Shield genuinely over-blocks only 14.4\% of tasks (those the baseline completes but Task Shield blocks), while 80\% of its Utility=0 cases are tasks the baseline also fails. Future work should evaluate on stronger backbones (e.g., GPT-4o, Claude) where the baseline Utility is higher, enabling cleaner separation of defense over-blocking from model weakness.
 
 \subsection{Main Results Table}
 
-\Cref{tab:main} reports results for the 10 defenses we can faithfully evaluate in our API-based pipeline. Attention Tracker (IP) requires access to model internals (attention weights) not available via API; our implementation uses a token-frequency proxy. We report its results separately in \Cref{sec:proxy_results} and do not include it in the main quantitative conclusions. P4 (Least Privilege) requires real OS-level sandboxing; our implementation is a prompt-level simulation, so we discuss it qualitatively (\Cref{sec:principles}) rather than in the main table.
+\Cref{tab:main} reports end-to-end results for all 11 defenses across three conditions: L0 (benign), L1 (static attack), and L2 (adaptive attack). Attention Tracker and P4 are excluded due to fidelity limitations (\Cref{sec:proxy_results}).
 
 \begin{table*}[t]
 \centering
 \small
-\caption{Main results: 11 defenses under \texttt{important\_instructions} attack on AgentDojo workspace (10 user tasks $\times$ 3 injection tasks $\times$ 3 seeds = 90 trials per defense, GPT-4o-mini). ASR and Utility are computed by AgentDojo's native end-to-end evaluators (\texttt{security\_from\_traces} and \texttt{user\_task.utility}) on real tool-execution traces. 95\% Wilson CIs in brackets. Bold = best in each metric.}
+\caption{Main results: 11 defenses on AgentDojo workspace (GPT-4o-mini, 3 seeds). L0 = benign (no attack, 30 trials), L1 = static \texttt{important\_instructions} (90 trials), L2 = defense-matched adaptive (90 trials). ASR from \texttt{security\_from\_traces}; Utility from \texttt{user\_task.utility}; both on real tool traces. ``Benign U'' = L0 utility (over-blocking indicator). Bold = best ASR/Utility per condition.}
 \label{tab:main}
-\begin{tabular}{llcc}
+\begin{tabular}{llcccccc}
 \toprule
-Defense & Class & ASR $\downarrow$ [95\% CI] & Utility $\uparrow$ [95\% CI] \\
+ & & \multicolumn{2}{c}{L0 (Benign)} & \multicolumn{2}{c}{L1 (Static)} & \multicolumn{2}{c}{L2 (Adaptive)} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
+Defense & Class & --- & Util$\uparrow$ & ASR$\downarrow$ & Util$\uparrow$ & ASR$\downarrow$ & Util$\uparrow$ \\
 \midrule
-No Defense & --- & 0.74 [0.65, 0.82] & 0.19 [0.12, 0.28] \\
+No Defense & --- & --- & 0.90 & 0.74 & 0.19 & 0.70 & 0.20 \\
 \midrule
-Polymorphic & IE & \textbf{0.14} [0.09, 0.23] & \textbf{0.73} [0.63, 0.81] \\
-Mixture-of-Enc. & IE & 0.16 [0.10, 0.24] & 0.69 [0.59, 0.78] \\
-Spotlighting & IE & 0.21 [0.14, 0.31] & 0.67 [0.57, 0.76] \\
+Polymorphic & IE & --- & 0.90 & 0.14 & 0.73 & \textbf{0.08} & \textbf{0.82} \\
+Mixture-of-Enc. & IE & --- & 0.87 & 0.16 & 0.69 & \textbf{0.04} & \textbf{0.86} \\
+Spotlighting & IE & --- & 0.80 & 0.21 & 0.67 & 0.06 & 0.82 \\
 \midrule
-StruQ (prompt) & SQ & 0.70 [0.60, 0.78] & 0.17 [0.10, 0.27] \\
+StruQ (prompt) & SQ & --- & 0.83 & 0.70 & 0.17 & 0.59 & 0.32 \\
 \midrule
-FATH & RC & \textbf{0.00} [0.00, 0.04] & 0.02 [0.00, 0.07] \\
-Task Shield & RC & 0.10 [0.05, 0.18] & 0.02 [0.00, 0.07] \\
-IPIGuard & RC & 0.38 [0.28, 0.48] & 0.06 [0.02, 0.13] \\
+FATH & RC & --- & 0.03 & \textbf{0.00} & 0.02 & \textbf{0.00} & 0.06 \\
+Task Shield & RC & --- & 0.43 & 0.10 & 0.02 & \textbf{0.00} & 0.07 \\
+IPIGuard & RC & --- & 0.43 & 0.38 & 0.06 & 0.34 & 0.10 \\
 \midrule
-P1: Echo Canary & RC & 0.03 [0.01, 0.09] & 0.00 [0.00, 0.04] \\
-P2: Orthogonal & RC & \textbf{0.00} [0.00, 0.04] & 0.00 [0.00, 0.04] \\
-P3: Task Invariant & RC & 0.42 [0.32, 0.52] & 0.02 [0.00, 0.07] \\
+P1: Echo Canary & RC & --- & 0.03 & 0.03 & 0.00 & 0.01 & 0.01 \\
+P2: Orthogonal & RC & --- & 0.00 & \textbf{0.00} & 0.00 & \textbf{0.00} & 0.00 \\
+P3: Task Invariant & RC & --- & 0.50 & 0.42 & 0.02 & 0.39 & 0.07 \\
 \bottomrule
-\multicolumn{4}{l}{\footnotesize IE = Input Encoding, SQ = Structured Query, RC = Runtime Checking.}
+\multicolumn{8}{l}{\footnotesize IE = Input Encoding, SQ = Structured Query, RC = Runtime Checking.}
 \end{tabular}
 \end{table*}
 
