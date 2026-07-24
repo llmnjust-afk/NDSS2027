@@ -4,28 +4,28 @@
 
 \Cref{tab:stats} reports the L1 (static-payload) ASR and Utility with 95\% Wilson confidence intervals, computed from the native end-to-end results. These are \emph{marginal} proportions over 90 attempts per defense (10 user tasks $\times$ 3 injection tasks $\times$ 3 seeds).
 
-\paragraph{Paired L1-vs-L2 analysis.} Because L1 and every L2 candidate reuse the same (user task, injection task, seed) units, the L1-vs-L2 comparison is paired. We therefore do \emph{not} rely on the marginal Wilson intervals for the paired difference $\Delta=\mathrm{ASR}_{L2\text{-set}}-\mathrm{ASR}_{L1}$; instead we report an exact McNemar test on the discordant pairs and a paired bootstrap confidence interval for $\Delta$, additionally clustering the bootstrap by user task and by injection task to account for the hierarchical structure (the same task recurs across seeds, so the 90 attempts are not independent). Because the L2 candidate set contains the exact L1 payload, $\Delta\geq 0$ by construction, and the McNemar test measures whether the L2 set adds \emph{additional} successes beyond L1. The analysis code (\texttt{sok\_ipl/native/monotonic\_stats.py}) computes these quantities; for input-encoding defenses no candidate exceeds L1, so $\Delta=0$ and the worst-case Robust ASR equals the L1 value.
+\paragraph{Paired L1-vs-Robust analysis.} Because L1 and every L2 candidate reuse the same (user task, injection task, seed) units, the comparison is paired. We therefore do \emph{not} rely on marginal Wilson intervals for the paired difference $\Delta=\text{Robust ASR}-\mathrm{ASR}_{L1}$; instead we report an exact McNemar test on the discordant pairs and paired bootstrap confidence intervals for $\Delta$, clustering the bootstrap by user task to account for the hierarchical structure (the same task recurs across seeds, so the 90 attempts are not independent). Because the L2 candidate set contains the exact L1 payload, $\Delta\geq 0$ by construction, and the McNemar test measures whether the set adds \emph{additional} successes beyond L1. \Cref{tab:stats} reports the results (analysis code: \texttt{sok\_ipl/native/monotonic\_stats.py}). The best-of-$k$ set significantly increases ASR over L1 for the input-encoding defenses, StruQ, IPIGuard, P3, and no-defense (McNemar $p<0.02$, cluster-bootstrap CI excludes zero), and does not significantly increase it for FATH, Task Shield, P1, and P2 (which suppress ASR only by over-blocking; \Cref{app:overblock}).
 
 \begin{table}[h]
 \centering
 \small
-\caption{Per-defense L1 (static-payload) end-to-end results: ASR and Utility with 95\% Wilson CI (marginal, n=90 per defense, 3 seeds). Paired L1-vs-L2 differences are analyzed with McNemar and cluster bootstrap (see text), not these marginal intervals.}
+\caption{Paired L1-vs-Robust analysis (n=90 per defense, 3 seeds). ASR$_{L1}$ = static payload; Robust = capability-monotonic worst case over the L2 candidate set (includes L1). $\Delta$ = Robust $-$ ASR$_{L1}$ with 95\% paired-bootstrap CI; ``Cluster CI'' clusters by user task; $p$ is the exact McNemar two-sided $p$-value.}
 \label{tab:stats}
-\begin{tabular}{lcc}
+\begin{tabular}{lccll c}
 \toprule
-Defense & ASR [95\% CI] & Utility [95\% CI] \\
+Defense & ASR$_{L1}$ & Robust & $\Delta$ [95\% CI] & Cluster CI & McNemar $p$ \\
 \midrule
-No Defense & 0.74 [0.65, 0.82] & 0.19 [0.12, 0.28] \\
-Polymorphic & 0.14 [0.09, 0.23] & 0.73 [0.63, 0.81] \\
-Mixture-of-Enc. & 0.16 [0.10, 0.24] & 0.69 [0.59, 0.78] \\
-Spotlighting & 0.21 [0.14, 0.31] & 0.67 [0.57, 0.76] \\
-StruQ (prompt) & 0.70 [0.60, 0.78] & 0.17 [0.10, 0.27] \\
-FATH & 0.00 [0.00, 0.04] & 0.02 [0.00, 0.07] \\
-Task Shield & 0.10 [0.05, 0.18] & 0.02 [0.00, 0.07] \\
-IPIGuard & 0.38 [0.28, 0.48] & 0.06 [0.02, 0.13] \\
-P1: Echo Canary & 0.03 [0.01, 0.09] & 0.00 [0.00, 0.04] \\
-P2: Orthogonal & 0.00 [0.00, 0.04] & 0.00 [0.00, 0.04] \\
-P3: Task Invariant & 0.42 [0.32, 0.52] & 0.02 [0.00, 0.07] \\
+Spotlighting & 0.09 & 0.19 & +0.10 [+0.04, +0.17] & [+0.02, +0.20] & 0.004 \\
+Polymorphic & 0.10 & 0.29 & +0.19 [+0.11, +0.28] & [+0.08, +0.32] & $<$0.001 \\
+Mixture-of-Enc. & 0.10 & 0.30 & +0.20 [+0.12, +0.29] & [+0.07, +0.36] & $<$0.001 \\
+StruQ (prompt) & 0.63 & 0.89 & +0.26 [+0.17, +0.36] & [+0.14, +0.36] & $<$0.001 \\
+FATH & 0.00 & 0.00 & +0.00 [+0.00, +0.00] & [+0.00, +0.00] & 1.000 \\
+Task Shield & 0.06 & 0.07 & +0.01 [+0.00, +0.03] & [+0.00, +0.03] & 1.000 \\
+IPIGuard & 0.40 & 0.52 & +0.12 [+0.06, +0.19] & [+0.06, +0.20] & 0.001 \\
+P1: Echo Canary & 0.02 & 0.04 & +0.02 [+0.00, +0.06] & [+0.00, +0.07] & 0.500 \\
+P2: Orthogonal & 0.00 & 0.00 & +0.00 [+0.00, +0.00] & [+0.00, +0.00] & 1.000 \\
+P3: Task Invariant & 0.42 & 0.50 & +0.08 [+0.02, +0.13] & [+0.01, +0.16] & 0.016 \\
+No Defense & 0.63 & 0.86 & +0.22 [+0.14, +0.31] & [+0.12, +0.33] & $<$0.001 \\
 \bottomrule
 \end{tabular}
 \end{table}
